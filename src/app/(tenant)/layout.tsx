@@ -32,6 +32,12 @@ export default async function TenantLayout({ children }: Readonly<{ children: Re
               Onboarding
             </Link>
             <Link
+              href="/tenant/properties"
+              className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
+            >
+              Propiedades
+            </Link>
+            <Link
               href="/tenant/profile"
               className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
             >

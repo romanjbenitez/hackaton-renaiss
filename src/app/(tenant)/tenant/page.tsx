@@ -28,8 +28,14 @@ export default async function TenantDashboardPage() {
         <div className="mt-6 flex flex-wrap items-center gap-3">
           {hasCompletedOnboarding ? <TrustScoreBadge score={snapshot.baseScore} /> : null}
           <Link
-            href={hasProfile ? "/tenant/onboarding?step=2" : "/tenant/onboarding"}
+            href="/tenant/properties"
             className={cn(buttonVariants(), "rounded-2xl")}
+          >
+            Ver publicaciones
+          </Link>
+          <Link
+            href={hasProfile ? "/tenant/onboarding?step=2" : "/tenant/onboarding"}
+            className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
           >
             {hasProfile ? "Continuar onboarding" : "Empezar onboarding"}
           </Link>
