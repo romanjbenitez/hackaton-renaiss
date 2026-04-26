@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { PropertyType } from "@prisma/client";
@@ -120,28 +120,15 @@ export function PropertiesCatalog({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [sort, setSort] = useState<PropertySort>("compatibility_desc");
-  const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>("all");
-  const [searchFilter, setSearchFilter] = useState("");
-  const [cityFilter, setCityFilter] = useState<string>("all");
-  const [priceRangeFilter, setPriceRangeFilter] = useState<string>("all");
-  const [petsFilter, setPetsFilter] = useState<RuleFilter>("all");
-  const [smokersFilter, setSmokersFilter] = useState<RuleFilter>("all");
-  const [childrenFilter, setChildrenFilter] = useState<RuleFilter>("all");
-  const [onlyAvailable, setOnlyAvailable] = useState(false);
-
-  useEffect(() => {
-    const nextSort = (searchParams.get("sort") as PropertySort | null) ?? "compatibility_desc";
-    setSort(nextSort);
-    setSearchFilter(searchParams.get("q") ?? "");
-    setPropertyTypeFilter(searchParams.get("type") ?? "all");
-    setCityFilter(searchParams.get("city") ?? "all");
-    setPriceRangeFilter(searchParams.get("price") ?? "all");
-    setPetsFilter((searchParams.get("pets") as RuleFilter | null) ?? "all");
-    setSmokersFilter((searchParams.get("smokers") as RuleFilter | null) ?? "all");
-    setChildrenFilter((searchParams.get("children") as RuleFilter | null) ?? "all");
-    setOnlyAvailable(searchParams.get("available") === "1");
-  }, [searchParams]);
+  const sort = (searchParams.get("sort") as PropertySort | null) ?? "compatibility_desc";
+  const propertyTypeFilter = searchParams.get("type") ?? "all";
+  const searchFilter = searchParams.get("q") ?? "";
+  const cityFilter = searchParams.get("city") ?? "all";
+  const priceRangeFilter = searchParams.get("price") ?? "all";
+  const petsFilter = (searchParams.get("pets") as RuleFilter | null) ?? "all";
+  const smokersFilter = (searchParams.get("smokers") as RuleFilter | null) ?? "all";
+  const childrenFilter = (searchParams.get("children") as RuleFilter | null) ?? "all";
+  const onlyAvailable = searchParams.get("available") === "1";
 
   function updateQuery(nextValues: {
     sort?: PropertySort;

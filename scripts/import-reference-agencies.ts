@@ -939,7 +939,32 @@ async function upsertProperty(
   agencyId: string,
   property: ReturnType<typeof buildAgencyProperties>[number]
 ) {
-  const { sourceImageUrl: _sourceImageUrl, ...databaseProperty } = property;
+  const databaseProperty: Omit<typeof property, "sourceImageUrl"> = {
+    title: property.title,
+    description: property.description,
+    addressLine: property.addressLine,
+    city: property.city,
+    province: property.province,
+    postalCode: property.postalCode,
+    propertyType: property.propertyType,
+    status: property.status,
+    squareMeters: property.squareMeters,
+    bedrooms: property.bedrooms,
+    bathrooms: property.bathrooms,
+    price: property.price,
+    currency: property.currency,
+    expenses: property.expenses,
+    externalUrl: property.externalUrl,
+    photos: property.photos,
+    targetTrustScore: property.targetTrustScore,
+    acceptedGuarantees: property.acceptedGuarantees,
+    acceptsPets: property.acceptsPets,
+    acceptsSmokers: property.acceptsSmokers,
+    acceptsChildren: property.acceptsChildren,
+    preferredProfile: property.preferredProfile,
+    compatibilityNotes: property.compatibilityNotes,
+    publishedAt: property.publishedAt,
+  };
   const existing = await findProperty(supabase, agencyId, property.title, property.addressLine);
   const payload = {
     agencyId,
