@@ -1,237 +1,295 @@
-# PropTech — Plataforma Inmobiliaria Inteligente
+# PropTech
 
-Plataforma full-stack que conecta inquilinos, inmobiliarias y administradores en un flujo operativo completo: pasaporte digital del inquilino, gestión de propiedades y candidaturas, tablero de transacción con historial de estados, portal compartido sin login y análisis con IA en cada etapa crítica del proceso.
+Plataforma full-stack para gestión inmobiliaria con tres actores:
 
----
+- `tenant`: onboarding, documentos, trust score, catálogo de propiedades y postulaciones
+- `agency`: publicación de propiedades, gestión de candidatos y seguimiento de transacciones
+- `admin`: aprobación de agencias y revisión de documentación sospechosa
 
-## Setup local (desde cero)
+La app combina `Next.js App Router`, `Prisma`, `PostgreSQL`, `Supabase` para auth/storage y análisis asistidos por IA con fallback local cuando el proveedor no está configurado.
+
+## Stack actual
+
+| Capa | Tecnología |
+| --- | --- |
+| App full-stack | Next.js 16 + React 19 + TypeScript |
+| Estilos | Tailwind CSS 4 + componentes UI propios |
+| ORM / DB | Prisma + PostgreSQL |
+| Auth / Storage | Supabase SSR + Supabase Storage |
+| IA | `@ai-sdk/groq` + fallbacks locales |
+| Charts | Recharts |
+| CI | GitHub Actions |
+
+## Qué resuelve el proyecto
+
+- onboarding del inquilino con perfil y documentación
+- scoring de confianza con explicación y sugerencias
+- matching entre perfil y propiedad
+- carga manual o desde plataforma de candidatos
+- seguimiento de una transacción inmobiliaria por etapas
+- portal público por token para compartir estado sin login
+
+## Comportamiento por configuración
+
+La app usa una sola base de código. No hay dos productos distintos ni dos builds separados.
+
+Según las variables de entorno disponibles, algunas capacidades cambian de comportamiento:
+
+- si `Supabase` no está configurado, la autenticación usa credenciales demo y cookies locales
+- si `GROQ_API_KEY` no está configurada, los flujos de IA responden con fallback local
+- si `Resend` no está configurado, las notificaciones por email no se ejecutan de punta a punta
+
+## Setup local
 
 ### Prerequisitos
 
 - Node.js 20+
-- Docker + Docker Compose
-- Una clave de API de GROK (gratuita en [x.ai](https://x.ai))
+- npm
+- Docker + Docker Compose para el flujo local con Postgres
 
-### Opción A — Docker Compose (recomendado)
+### Opción A: Docker Compose
+
+La forma más simple para levantar la app con base de datos local.
 
 ```bash
-git clone <repo-url>
-cd proptech
-
-# Crear .env para Docker Compose (ver sección Variables de entorno)
 cp .env.example .env
-
-# Levanta PostgreSQL, corre migraciones, seed y la app
 docker compose up --build
 ```
 
-La app queda en `http://localhost:3000`.
-Las migraciones y el seed corren automáticamente en el servicio `migrate` antes de que la app arranque.
+Esto levanta:
 
-### Opción B — Desarrollo local con Supabase
+- `db`: PostgreSQL local
+- `migrate`: `prisma migrate deploy` + `prisma db seed`
+- `app`: Next.js en `http://localhost:3000`
+
+### Opción B: desarrollo con Node.js
 
 ```bash
-npm install
-
-# Configurar .env.local con DATABASE_URL y DIRECT_URL de Supabase
+npm ci
 cp .env.example .env.local
-
-# Aplicar migraciones
-npx prisma migrate dev
-
-# Cargar seed de demo
-npx prisma db seed
-
-# Crear bucket + usuarios demo en Supabase Auth
-npm run supabase:sync-demo-users
-
-# Iniciar dev server
+npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
-### Credenciales de demo
+Si además querés usar Supabase Auth/Storage en local:
 
-| Rol | Email | Contraseña |
-|-----|-------|------------|
-| Inquilino | `monica.rosa.alustiza+13452513@demo.proptech.ar` | `demo-13452513` |
-| Inmobiliaria | `contacto@remax-palermo.ar` | `demo-agency` |
-| Admin | `admin@proptech.ar` | `demo-admin` |
-
-> En modo demo (sin Supabase configurado), usá las credenciales listadas en `/login` para cada rol.
-
----
+```bash
+npm run supabase:sync-demo-users
+```
 
 ## Variables de entorno
 
-```env
-# PostgreSQL (Supabase — usar pgbouncer para runtime, conexión directa para migraciones)
-DATABASE_URL="postgres://USER.PROJECT_REF:PASSWORD@REGION.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgres://USER.PROJECT_REF:PASSWORD@REGION.pooler.supabase.com:5432/postgres"
+La referencia viva está en [.env.example](/home/unix/hackaton/proptech/.env.example:1). Las principales son:
 
-# Supabase Auth
+```env
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+DATABASE_URL="postgresql://..."
+DIRECT_URL="postgresql://..."
+
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
 SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 SUPABASE_STORAGE_BUCKET="tenant-documents"
 
-# GROK AI (obligatorio para features de IA)
-GROK_API_KEY="your-grok-api-key"
-GROK_BASE_URL="https://api.x.ai/v1"
+GROQ_API_KEY="your-groq-api-key"
+# GROQ_MODEL="llama-3.3-70b-versatile"
 
-# Email — Resend (opcional; sin esto los emails se simulan en consola)
-RESEND_API_KEY="your-resend-api-key"
+RESEND_API_KEY="re_..."
 RESEND_FROM_EMAIL="noreply@yourdomain.com"
-
-# App
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
----
+### Notas importantes
 
-## Stack y decisiones de arquitectura
+- Si `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` no están configuradas, la app usa autenticación demo local.
+- Si `GROQ_API_KEY` no está configurada, los endpoints de IA responden con fallback local.
+- `SUPABASE_SERVICE_ROLE_KEY` solo es necesaria para capacidades server-side como Storage y sincronización administrativa.
 
-| Capa | Tecnología | Por qué |
-|------|-----------|---------|
-| Frontend + Backend | Next.js 14 App Router (full-stack) | RSC para cero JS donde no hace falta, Server Actions para mutaciones, un solo deploy |
-| Estilos | Tailwind CSS + shadcn/ui | Velocidad de desarrollo, accesibilidad incluida |
-| Base de datos | PostgreSQL + Prisma ORM | Tipado end-to-end desde schema hasta queries, migraciones versionadas |
-| Auth + Storage | Supabase Auth + Supabase Storage | OAuth + email/password sin levantar servicio propio; documentos persistidos en bucket privado con URLs firmadas |
-| IA | GROK (xAI) vía Vercel AI SDK | Modelo gratuito con buen razonamiento; API compatible con OpenAI para migrar fácil |
-| Deploy | Vercel | Zero-config para Next.js, preview deploys automáticos |
-| CI/CD | GitHub Actions | Lint + build en PRs, deploy a Vercel en push a `main` |
+## Scripts útiles
 
-### Decisiones clave
+```bash
+npm run dev
+npm run build
+npm run start
 
-**Server Components por defecto:** Solo usamos `"use client"` donde hay estado o interacción (filtros, formularios reactivos). Esto reduce el JS enviado al browser y mejora el TTFB.
+npm run lint
+npm run type-check
+npm test
 
-**Seed realista como inversión:** 20 inquilinos, 10 propiedades, 15 candidaturas y transacciones en distintas etapas permiten mostrar el producto en el video sin configuración manual.
+npm run db:generate
+npm run db:migrate
+npm run db:seed
+npm run db:studio
 
-**Persistencia real de documentos:** Los archivos se suben a Supabase Storage y en la DB solo queda metadata (`storageKey`, mime, tamaño y estado). Las vistas generan URLs firmadas server-side para revisar cada documento.
-
-**Zod en IA obligatorio:** Todos los responses de GROK pasan por schemas Zod con fallback. La IA nunca bloquea el flujo — si falla, hay un valor sensible por defecto.
-
----
-
-## Features de IA
-
-### 1. Score de confianza (`POST /api/ai/trust-score`)
-
-Analiza la documentación cargada por el inquilino y devuelve un score estructurado:
-
-```json
-{
-  "score": 0-100,
-  "dimensions": {
-    "docCompleteness": 0-100,
-    "incomeConsistency": 0-100,
-    "guaranteeType": 0-100,
-    "platformHistory": 0-100
-  },
-  "improvementSuggestion": "Cargá tus últimos 3 recibos para subir de 54 a 78",
-  "flags": ["Ingresos no verificables"]
-}
+npm run supabase:sync-demo-users
+npm run supabase:import-reference-agencies
 ```
 
-El score se calcula al terminar el onboarding y se muestra desglosado por dimensión en el perfil. Si GROK no responde, `deriveTrustScoreFallback` calcula un score heurístico basado en completitud documental.
+## Calidad de código
 
-### 2. Compatibilidad perfil–propiedad (`POST /api/ai/compatibility`)
+El repo tiene una base explícita de calidad:
 
-Cruza el perfil del inquilino con la ficha de compatibilidad de la propiedad:
+- `ESLint` para reglas estáticas
+- `TypeScript strict`
+- tests con `node:test`
+- `Prisma` con schema y migraciones versionadas
+- CI en GitHub Actions con `lint`, `type-check`, `test` y `build`
 
-```json
-{
-  "compatibilityScore": 0-100,
-  "explanation": "El perfil tiene ingresos adecuados y garantía hipotecaria aceptada",
-  "matchPoints": ["Garantía hipotecaria aceptada", "Score supera el mínimo"],
-  "conflicts": ["Tiene mascotas — la propiedad no las acepta"]
-}
+### Ejecutar chequeos locales
+
+```bash
+npm run lint
+npm run type-check
+npm test
 ```
 
-Los resultados se cachean en el campo `aiCompatibilityScore` de la candidatura para evitar recalcular en cada render. El badge con tooltip aparece en la lista de candidatos de la inmobiliaria y en las tarjetas de propiedades del inquilino.
+## CI
 
-### 3. Resumen comparativo de candidatos (`POST /api/ai/candidates-summary`)
+El workflow principal está en [.github/workflows/ci.yml](/home/unix/hackaton/proptech/.github/workflows/ci.yml:1).
 
-Compara los mejores candidatos de una propiedad y destaca al más fuerte:
+Se ejecuta en:
 
-```json
-{
-  "summary": "Martínez lidera con score 87 y garantía hipotecaria. González y Rodríguez son opciones sólidas.",
-  "topCandidateId": "clx...",
-  "highlights": [
-    { "candidateId": "clx...", "strength": "Mayor score + mejor ratio ingreso/alquiler" }
-  ]
-}
-```
+- `pull_request` a `main`
+- `push` a `main`
+- ejecución manual con `workflow_dispatch`
 
-Se genera on-demand desde el panel de candidatos para no consumir tokens innecesariamente. Incluye skeleton de loading mientras GROK procesa.
+Checks actuales:
 
-### 4. Detección de documentación sospechosa (`POST /api/ai/check-document`)
+1. `npm ci`
+2. `prisma generate`
+3. `npm run lint`
+4. `npm run type-check`
+5. `npm test`
+6. `npm run build`
 
-Evalúa si un comprobante de ingresos tiene señales de manipulación:
+Recomendación operativa:
 
-```json
-{
-  "suspicious": true,
-  "confidence": 0.82,
-  "reason": "El formato del recibo no coincide con el emisor declarado"
-}
-```
+- marcar `CI / Quality Checks` como required check en branch protection de `main`
 
-Si `suspicious: true` y `confidence > 0.7`, el documento se marca como `FLAGGED` y aparece en la cola de revisión del admin (`/admin/documents-queue`). El administrador puede aprobar o rechazar con una nota. El inquilino ve el badge "Revisión pendiente" en su listado de documentos.
+## IA y fallbacks
 
----
+La carpeta [src/lib/ai](/home/unix/hackaton/proptech/src/lib/ai) concentra prompts, schemas y parsing.
 
-## CI/CD
+Casos de uso principales:
 
-```
-push a feature branch
-  └─ GitHub Actions: lint (eslint) + build (next build) + type check (tsc --noEmit)
+- `trust-score`
+- `compatibility`
+- `candidates-summary`
+- `check-document`
 
-merge a main
-  └─ Vercel: deploy automático a producción
-  └─ Preview URL disponible en cada PR
-```
+Principio de diseño:
 
-Las migraciones de producción se aplican manualmente con `npx prisma migrate deploy` contra la DB de producción antes de cada deploy que cambia el schema.
+- la IA mejora la experiencia
+- la IA no debe bloquear el flujo principal
+- toda salida se valida y, si falla, se usa fallback local
 
----
+## Seguridad y autorización
 
-## Estructura del proyecto
+Se endurecieron especialmente las rutas de IA y sesión:
 
-```
+- la sesión server-side usa usuario verificado
+- las rutas de IA validan rol y ownership antes de leer o persistir datos
+- `tenant` y `agency` no pueden operar sobre recursos ajenos solo pasando IDs
+
+Esto es especialmente importante en:
+
+- [src/app/api/ai/trust-score/route.ts](/home/unix/hackaton/proptech/src/app/api/ai/trust-score/route.ts:1)
+- [src/app/api/ai/check-document/route.ts](/home/unix/hackaton/proptech/src/app/api/ai/check-document/route.ts:1)
+- [src/app/api/ai/compatibility/route.ts](/home/unix/hackaton/proptech/src/app/api/ai/compatibility/route.ts:1)
+- [src/app/api/ai/candidates-summary/route.ts](/home/unix/hackaton/proptech/src/app/api/ai/candidates-summary/route.ts:1)
+
+## Estructura
+
+```text
 src/
   app/
-    (tenant)/          → rutas del inquilino
-    (agency)/          → rutas de la inmobiliaria
-    (admin)/           → panel de administración
-    api/ai/            → endpoints de IA (trust-score, compatibility, candidates-summary, check-document)
-    portal/[token]/    → vista pública sin login para el seguimiento de transacciones
+    (tenant)/
+    (agency)/
+    (admin)/
+    api/
+    auth/
+    portal/[token]/
   components/
-    tenant/            → componentes específicos del inquilino
-    agency/            → componentes específicos de la inmobiliaria
-    ui/                → componentes base (shadcn + propios)
+    tenant/
+    agency/
+    auth/
+    ui/
   lib/
-    ai/                → prompts, schemas Zod, cliente GROK
-    agency/            → queries de propiedades y transacciones
-    auth/              → helpers de Supabase Auth y sesión
-    candidacies/       → service layer para candidaturas
-    tenant/            → lógica de documentos, onboarding y scoring
+    ai/
+    agency/
+    auth/
+    candidacies/
+    catalogs/
+    db/
+    tenant/
+    validations/
 prisma/
-  schema.prisma        → modelo completo
-  seed.ts              → 20 inquilinos + 10 propiedades + 15 candidaturas + transacciones
-  migrations/          → historial de migraciones
+  schema.prisma
+  migrations/
+  seed.ts
+tests/
+  *.test.ts
 ```
 
----
+## Datos de ejemplo
+
+El seed crea datos suficientes para mostrar la app sin carga manual inicial:
+
+- usuario admin
+- agencias con distintos estados
+- múltiples inquilinos con perfiles variados
+- propiedades publicadas
+- candidaturas y transacciones de ejemplo
+
+## Estado actual de mantenibilidad
+
+En esta iteración se mejoró:
+
+- extracción de catálogos compartidos para propiedad/documentos
+- componentes UI reutilizables para alerts, pills y stat cards
+- reducción de componentes con demasiadas responsabilidades
+- mejor coherencia entre lógica de negocio, tests y CI
+
+Todavía queda espacio para crecer con:
+
+- tests de autorización más profundos sobre rutas
+- tests de componentes/UI
+- tests end-to-end de flujos completos
+
+## Credenciales demo
+
+Cuando Supabase no está configurado, la pantalla `/login` muestra los accesos disponibles. Además el seed crea usuarios representativos como:
+
+- `admin@proptech.ar`
+- `contacto@remax-palermo.ar`
+
+Las credenciales efectivas del modo demo están gestionadas por [src/lib/auth/demo-users.json](/home/unix/hackaton/proptech/src/lib/auth/demo-users.json:1).
 
 ## ¿Qué haríamos con un día más?
 
-1. **Integración real de email con Resend** — el trigger ya existe y el template está definido; solo falta configurar la API key y testar el flujo completo de notificaciones.
+1. **Endurecer notificaciones reales con Resend**  
+   El flujo base ya existe, pero falta cerrar la integración productiva completa: credenciales reales, manejo de errores, reintentos y validación del envío en escenarios clave.
 
-2. **Compatibilidad IA calculada en background al crear candidatura** — hoy se calcula on-demand; con un job asincrónico (Vercel Cron o un queue simple), todos los candidatos tendrían el badge inmediatamente sin esperar interacción del usuario.
+2. **Calcular compatibilidad IA en background al crear una candidatura**  
+   Hoy parte del análisis se resuelve on-demand. Con un job asincrónico o una cola simple, los badges y resúmenes quedarían listos sin depender de interacción posterior.
 
-3. **Persistir resultados IA históricos por propiedad y candidatura** — hoy se muestran bien en la operación activa, pero falta una vista histórica para comparar evolución de scores y decisiones.
+3. **Persistir histórico de evaluaciones IA**  
+   Hoy el sistema prioriza el estado operativo actual. Falta guardar versiones históricas de score, compatibilidad y decisiones para auditoría, trazabilidad y análisis comparativo.
 
-4. **Búsqueda y filtros avanzados en propiedades** — filtro por rango de precio, superficie y tipo de propiedad en la vista del inquilino para grandes catálogos.
+4. **Profundizar el catálogo de propiedades**  
+   La base de búsqueda y filtros ya existe, pero se puede extender con criterios adicionales como superficie, expensas, ordenamientos más ricos y combinaciones de filtros más robustas.
 
-5. **Tests de integración para el flujo de transacción** — el flujo de 5 etapas es el corazón del producto y merece un test end-to-end que cubra avance de estado + notificación + portal compartido.
+5. **Agregar tests de integración del flujo de transacción**  
+   El circuito de estados, notas, documentos y portal compartido es el núcleo operativo del producto y merece cobertura de integración o end-to-end para reducir regresiones.
+
+## Resumen para evaluación
+
+Si este repo se revisa técnicamente, los puntos más fuertes hoy son:
+
+- tipado consistente con TypeScript + Prisma
+- separación razonable por dominios (`tenant`, `agency`, `auth`, `ai`)
+- CI automatizada con checks reales
+- seguridad mejorada en rutas sensibles
+- fallbacks cuando servicios externos no están configurados
+- tests unitarios sobre reglas de negocio críticas
