@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { ensureCurrentTenantContext } from "@/lib/auth/actors";
 import { prisma } from "@/lib/db/prisma";
-import { uploadDocumentToStorage } from "@/lib/storage-server";
+import { deleteStoredDocumentsFromStorage, uploadDocumentToStorage } from "@/lib/storage-server";
 import { mapTenantDocumentFromDatabase } from "@/lib/tenant/documents";
 
 export const runtime = "nodejs";
@@ -47,8 +47,20 @@ export async function POST(request: Request) {
     );
   }
 
+  const tenantProfileId = tenantContext.tenantProfile.id;
+
   const mimeType = file.type || "application/octet-stream";
   const uploadedAt = new Date();
+  const existingDocuments = await prisma.document.findMany({
+    where: {
+      tenantProfileId,
+      type: parsed.data.documentType,
+    },
+    select: {
+      id: true,
+      storageKey: true,
+    },
+  });
 
   let storedDocument;
 
@@ -73,38 +85,56 @@ export async function POST(request: Request) {
     );
   }
 
-  const document = await prisma.document.create({
-    data: {
-      tenantProfileId: tenantContext.tenantProfile.id,
-      uploadedByUserId: tenantContext.user.id,
-      type: parsed.data.documentType,
-      displayName: parsed.data.label,
-      fileName: file.name,
-      mimeType,
-      storageKey: storedDocument.storageKey,
-      url: null,
-      base64Data: null,
-      uploadedAt,
-    },
-    select: {
-      id: true,
-      type: true,
-      displayName: true,
-      fileName: true,
-      mimeType: true,
-      storageKey: true,
-      url: true,
-      uploadedAt: true,
-      verificationStatus: true,
-      suspicious: true,
-      suspiciousReason: true,
-      suspiciousScore: true,
-      base64Data: true,
-    },
+  const document = await prisma.$transaction(async (tx) => {
+    if (existingDocuments.length > 0) {
+      await tx.document.deleteMany({
+        where: {
+          id: {
+            in: existingDocuments.map((existingDocument) => existingDocument.id),
+          },
+        },
+      });
+    }
+
+    return tx.document.create({
+      data: {
+        tenantProfileId,
+        uploadedByUserId: tenantContext.user.id,
+        type: parsed.data.documentType,
+        displayName: parsed.data.label,
+        fileName: file.name,
+        mimeType,
+        storageKey: storedDocument.storageKey,
+        url: null,
+        base64Data: null,
+        uploadedAt,
+      },
+      select: {
+        id: true,
+        type: true,
+        displayName: true,
+        fileName: true,
+        mimeType: true,
+        storageKey: true,
+        url: true,
+        uploadedAt: true,
+        verificationStatus: true,
+        suspicious: true,
+        suspiciousReason: true,
+        suspiciousScore: true,
+        base64Data: true,
+      },
+    });
   });
+
+  try {
+    await deleteStoredDocumentsFromStorage(existingDocuments.map((document) => document.storageKey));
+  } catch {
+    // The latest upload remains valid even if old storage cleanup fails.
+  }
 
   return NextResponse.json({
     document: mapTenantDocumentFromDatabase(document, storedDocument.signedUrl),
-    tenantProfileId: tenantContext.tenantProfile.id,
+    tenantProfileId,
   });
 }

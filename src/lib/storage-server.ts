@@ -99,6 +99,28 @@ export async function uploadDocumentToStorage(input: {
   };
 }
 
+export async function deleteStoredDocumentsFromStorage(storageKeys: Array<string | null | undefined>) {
+  const keysToDelete = storageKeys.filter(
+    (storageKey): storageKey is string => typeof storageKey === "string" && storageKey.trim().length > 0
+  );
+
+  if (keysToDelete.length === 0 || !isSupabaseAdminConfigured()) {
+    return;
+  }
+
+  const supabase = createSupabaseAdminClient();
+
+  if (!supabase) {
+    return;
+  }
+
+  const { error } = await supabase.storage.from(getStorageBucketName()).remove(keysToDelete);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 export async function resolveStoredDocumentPreviewUrlFromStorage(input: {
   url?: string | null;
   storageKey?: string | null;
