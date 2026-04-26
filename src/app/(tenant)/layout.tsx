@@ -37,6 +37,12 @@ export default async function TenantLayout({ children }: Readonly<{ children: Re
             >
               Perfil
             </Link>
+            <Link
+              href="/tenant/documents"
+              className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
+            >
+              Documentos
+            </Link>
             <form action={signOutAction}>
               <button className={cn(buttonVariants({ variant: "ghost" }), "rounded-2xl")}>
                 Cerrar sesión

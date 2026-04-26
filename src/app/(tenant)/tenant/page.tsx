@@ -41,6 +41,14 @@ export default async function TenantDashboardPage() {
               Ver perfil
             </Link>
           ) : null}
+          {hasCompletedOnboarding ? (
+            <Link
+              href="/tenant/documents"
+              className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
+            >
+              Cargar DNI y documentos
+            </Link>
+          ) : null}
         </div>
       </section>
       <section className="bg-background rounded-4xl border p-8 shadow-sm">

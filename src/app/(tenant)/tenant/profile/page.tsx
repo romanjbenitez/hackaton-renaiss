@@ -116,6 +116,12 @@ export default async function TenantProfilePage({ searchParams }: TenantProfileP
               Este resumen combina datos personales, estilo de vida y garantía declarada.
             </p>
           </div>
+          <Link
+            href="/tenant/documents"
+            className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
+          >
+            Cargar documentación
+          </Link>
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -179,6 +185,17 @@ export default async function TenantProfilePage({ searchParams }: TenantProfileP
 
         <div className="bg-background rounded-4xl border p-8 shadow-sm">
           <p className="text-sm tracking-[0.22em] text-emerald-700 uppercase">Revisión documental</p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-muted-foreground text-sm">
+              Subí el DNI y los comprobantes para completar el legajo de la persona.
+            </p>
+            <Link
+              href="/tenant/documents"
+              className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
+            >
+              Ir a documentos
+            </Link>
+          </div>
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             <div className="rounded-3xl border p-5">
               <p className="text-muted-foreground text-sm">Verificados</p>
