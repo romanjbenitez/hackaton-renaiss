@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import { documentFraudAiSchema } from "@/lib/ai/schemas";
 import { generateGrokJsonOutput, parseJsonFromModelOutput } from "@/lib/ai/grok";
 import { docFraudDetectionPrompt } from "@/lib/ai/prompts";
+import { getStoredDocumentDataUrl } from "@/lib/storage-server";
 
 export const runtime = "nodejs";
 
@@ -60,6 +61,8 @@ export async function POST(request: Request) {
         type: true,
         displayName: true,
         mimeType: true,
+        storageKey: true,
+        url: true,
         base64Data: true,
       },
     });
@@ -73,7 +76,13 @@ export async function POST(request: Request) {
       type: document.type,
       displayName: document.displayName,
       mimeType: document.mimeType,
-      base64Data: document.base64Data ?? undefined,
+      base64Data:
+        (await getStoredDocumentDataUrl({
+          url: document.url,
+          storageKey: document.storageKey,
+          mimeType: document.mimeType,
+          base64Data: document.base64Data,
+        })) ?? undefined,
     };
   }
 

@@ -86,11 +86,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               </div>
             ) : null}
 
-            {!isConfigured ? (
+            {demoUsers.length > 0 ? (
               <div className="space-y-4 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-4 text-sm text-amber-950">
                 <p>
-                  Falta configurar `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-                  Mientras tanto, el login funciona en modo demo con credenciales mock.
+                  {isConfigured
+                    ? "Las credenciales demo se sincronizan automáticamente con Supabase Auth en el primer login."
+                    : "Falta configurar `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Mientras tanto, el login funciona en modo demo con credenciales mock."}
                 </p>
                 <p className="text-xs">
                   Mostrando cuentas para {roleLabels[selectedRole]}. Cambiá el selector de rol para

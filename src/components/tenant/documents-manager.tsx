@@ -156,16 +156,14 @@ export function DocumentsManager({
   const requiredDocuments = useMemo(() => getRequiredDocuments(profileType), [profileType]);
 
   async function handleUpload(documentType: string, label: string, input: UploadedDocumentInput) {
+    const formData = new FormData();
+    formData.set("documentType", documentType);
+    formData.set("label", label);
+    formData.set("file", input.file, input.fileName);
+
     const uploadResponse = await fetch("/api/tenant/documents", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        documentType,
-        label,
-        fileName: input.fileName,
-        mimeType: input.mimeType,
-        base64Data: input.base64,
-      }),
+      body: formData,
     });
 
     if (!uploadResponse.ok) {
@@ -177,7 +175,10 @@ export function DocumentsManager({
       tenantProfileId?: string;
     };
 
-    const newDoc = uploadResult.document;
+    const newDoc = {
+      ...uploadResult.document,
+      sizeLabel: uploadResult.document.sizeLabel === "Sin tamaño" ? input.sizeLabel : uploadResult.document.sizeLabel,
+    };
     setDocuments((currentDocuments) => [newDoc, ...currentDocuments]);
 
     try {

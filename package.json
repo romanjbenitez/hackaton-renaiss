@@ -16,7 +16,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "supabase:sync-demo-users": "ts-node --compiler-options {\"module\":\"CommonJS\",\"resolveJsonModule\":true} scripts/sync-demo-users.ts"
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.35",

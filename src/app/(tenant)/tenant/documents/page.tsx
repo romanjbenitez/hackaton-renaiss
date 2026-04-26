@@ -1,7 +1,7 @@
 import { ensureCurrentTenantContext } from "@/lib/auth/actors";
 import { requireUserRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
-import { mapTenantDocumentFromDatabase } from "@/lib/tenant/documents";
+import { mapTenantDocumentsFromDatabaseWithPreview } from "@/lib/tenant/documents-server";
 import { DocumentsManager } from "@/components/tenant/documents-manager";
 import { getTenantOnboardingDraft } from "@/lib/tenant/onboarding";
 
@@ -24,6 +24,7 @@ export default async function TenantDocumentsPage() {
           fileName: true,
           mimeType: true,
           storageKey: true,
+          url: true,
           uploadedAt: true,
           verificationStatus: true,
           suspicious: true,
@@ -33,6 +34,7 @@ export default async function TenantDocumentsPage() {
         },
       })
     : [];
+  const mappedDocuments = await mapTenantDocumentsFromDatabaseWithPreview(initialDocuments);
 
   return (
     <DocumentsManager
@@ -43,7 +45,7 @@ export default async function TenantDocumentsPage() {
       initialTrustScore={tenant?.tenantProfile?.trustScore ?? null}
       initialTrustExplanation={tenant?.tenantProfile?.trustScoreExplanation ?? null}
       initialTrustImprovementSuggestion={tenant?.tenantProfile?.improvementSuggestion ?? null}
-      initialDocuments={initialDocuments.map(mapTenantDocumentFromDatabase)}
+      initialDocuments={mappedDocuments}
     />
   );
 }

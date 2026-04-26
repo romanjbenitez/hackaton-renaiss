@@ -17,7 +17,19 @@ export async function updateSession(request: NextRequest) {
     return {
       response,
       role: demoSession?.role ?? null,
-      user: demoSession?.user ?? null,
+      user: demoSession
+        ? {
+            id: demoSession.id,
+            email: demoSession.email,
+            app_metadata: { role: demoSession.role },
+            user_metadata: {
+              first_name: demoSession.firstName,
+              last_name: demoSession.lastName,
+              company_name: demoSession.companyName,
+              role: demoSession.role,
+            },
+          }
+        : null,
     };
   }
 

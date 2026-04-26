@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type UploadedDocumentInput = {
-  base64: string;
+  file: File;
   fileName: string;
   mimeType: string;
   previewUrl: string;
@@ -68,7 +68,7 @@ export function DocumentUploader({ label, helperText, accept, onUpload }: Docume
 
             setPreviewName(file.name);
             onUpload({
-              base64: result,
+              file,
               fileName: file.name,
               mimeType: file.type || "application/octet-stream",
               previewUrl: result,

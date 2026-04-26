@@ -42,6 +42,9 @@ npx prisma migrate dev
 # Cargar seed de demo
 npx prisma db seed
 
+# Crear bucket + usuarios demo en Supabase Auth
+npm run supabase:sync-demo-users
+
 # Iniciar dev server
 npm run dev
 ```
@@ -69,6 +72,7 @@ DIRECT_URL="postgres://USER.PROJECT_REF:PASSWORD@REGION.pooler.supabase.com:5432
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
 SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+SUPABASE_STORAGE_BUCKET="tenant-documents"
 
 # GROK AI (obligatorio para features de IA)
 GROK_API_KEY="your-grok-api-key"
@@ -91,7 +95,7 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 | Frontend + Backend | Next.js 14 App Router (full-stack) | RSC para cero JS donde no hace falta, Server Actions para mutaciones, un solo deploy |
 | Estilos | Tailwind CSS + shadcn/ui | Velocidad de desarrollo, accesibilidad incluida |
 | Base de datos | PostgreSQL + Prisma ORM | Tipado end-to-end desde schema hasta queries, migraciones versionadas |
-| Auth + Storage | Supabase Auth | OAuth + email/password sin levantar servicio propio; storage mockeado como base64 para no perder tiempo en el hackathon |
+| Auth + Storage | Supabase Auth + Supabase Storage | OAuth + email/password sin levantar servicio propio; documentos persistidos en bucket privado con URLs firmadas |
 | IA | GROK (xAI) vía Vercel AI SDK | Modelo gratuito con buen razonamiento; API compatible con OpenAI para migrar fácil |
 | Deploy | Vercel | Zero-config para Next.js, preview deploys automáticos |
 | CI/CD | GitHub Actions | Lint + build en PRs, deploy a Vercel en push a `main` |
@@ -102,7 +106,7 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 **Seed realista como inversión:** 20 inquilinos, 10 propiedades, 15 candidaturas y transacciones en distintas etapas permiten mostrar el producto en el video sin configuración manual.
 
-**Mocking estratégico:** Storage de documentos usa base64 en DB en lugar de Supabase Storage. Ahorra integración compleja sin impactar la UX del demo.
+**Persistencia real de documentos:** Los archivos se suben a Supabase Storage y en la DB solo queda metadata (`storageKey`, mime, tamaño y estado). Las vistas generan URLs firmadas server-side para revisar cada documento.
 
 **Zod en IA obligatorio:** Todos los responses de GROK pasan por schemas Zod con fallback. La IA nunca bloquea el flujo — si falla, hay un valor sensible por defecto.
 

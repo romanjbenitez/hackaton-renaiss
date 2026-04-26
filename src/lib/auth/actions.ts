@@ -16,6 +16,7 @@ import {
   findDemoUserByCredentials,
   setDemoSessionCookie,
 } from "@/lib/auth/demo";
+import { ensureSupabaseAuthUserForDemoUser } from "@/lib/auth/supabase-demo-sync";
 import { createServerSupabaseClient } from "@/lib/auth/server";
 
 function getErrorRedirect(pathname: string, message: string) {
@@ -68,6 +69,18 @@ export async function signInWithPasswordAction(formData: FormData) {
 
   if (!supabase) {
     redirect(getErrorRedirect("/login", "No se pudo inicializar Supabase."));
+  }
+
+  const matchingDemoUser = findDemoUserByCredentials(roleValue, email, password);
+
+  if (matchingDemoUser) {
+    try {
+      await ensureSupabaseAuthUserForDemoUser(matchingDemoUser);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo sincronizar el usuario demo.";
+      redirect(getErrorRedirect("/login", message));
+    }
   }
 
   const { data, error } = await supabase.auth.signInWithPassword({

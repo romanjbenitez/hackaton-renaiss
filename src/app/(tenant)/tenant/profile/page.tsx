@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { ensureCurrentTenantContext } from "@/lib/auth/actors";
 import { requireUserRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
-import { mapTenantDocumentFromDatabase } from "@/lib/tenant/documents";
+import { mapTenantDocumentsFromDatabaseWithPreview } from "@/lib/tenant/documents-server";
 import { getTenantOnboardingDraft } from "@/lib/tenant/onboarding";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +65,7 @@ export default async function TenantProfilePage({ searchParams }: TenantProfileP
           fileName: true,
           mimeType: true,
           storageKey: true,
+          url: true,
           uploadedAt: true,
           verificationStatus: true,
           suspicious: true,
@@ -74,7 +75,7 @@ export default async function TenantProfilePage({ searchParams }: TenantProfileP
         },
       })
     : [];
-  const storedDocuments = documents.map(mapTenantDocumentFromDatabase);
+  const storedDocuments = await mapTenantDocumentsFromDatabaseWithPreview(documents);
 
   if (!draft.step1) {
     return (

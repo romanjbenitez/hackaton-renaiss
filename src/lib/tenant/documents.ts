@@ -11,6 +11,7 @@ import {
   getDocumentVerificationStatusLabel,
 } from "../documents";
 import { resolveStoredDocumentPreviewUrl } from "../storage";
+import { estimateByteSizeFromBase64 } from "../storage";
 
 export type ProfileType = TenantProfileType;
 export type GuaranteeType = "MORTGAGE" | "CAUTION_INSURANCE" | "NONE";
@@ -33,18 +34,14 @@ export type StoredTenantDocument = {
   feedbackMessage?: string;
 };
 
-function estimateSizeLabel(base64Data?: string | null) {
-  if (!base64Data) {
+function estimateSizeLabel(byteSize?: number | null) {
+  if (typeof byteSize !== "number") {
     return "Sin tamaño";
   }
 
-  const [, rawBase64 = base64Data] = base64Data.split(",");
-  const padding = rawBase64.endsWith("==") ? 2 : rawBase64.endsWith("=") ? 1 : 0;
-  const bytes = Math.max(0, Math.floor((rawBase64.length * 3) / 4) - padding);
-
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (byteSize < 1024) return `${byteSize} B`;
+  if (byteSize < 1024 * 1024) return `${(byteSize / 1024).toFixed(1)} KB`;
+  return `${(byteSize / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function mapTenantDocumentFromDatabase(document: {
@@ -54,29 +51,35 @@ export function mapTenantDocumentFromDatabase(document: {
   fileName: string;
   mimeType: string;
   storageKey: string | null;
+  url?: string | null;
   uploadedAt: Date;
   verificationStatus: DocumentVerificationStatus;
   suspicious: boolean;
   suspiciousReason: string | null;
   suspiciousScore: number | null;
   base64Data?: string | null;
-}) {
+}, previewUrl?: string | null) {
+  const effectivePreviewUrl =
+    previewUrl ??
+    resolveStoredDocumentPreviewUrl({
+      url: document.url ?? null,
+      mimeType: document.mimeType,
+      base64: document.base64Data,
+    });
+  const byteSize = document.base64Data ? estimateByteSizeFromBase64(document.base64Data) : null;
+
   return {
     id: document.id,
     documentType: document.type,
     label: document.displayName || getDocumentTypeLabel(document.type),
     fileName: document.fileName,
     mimeType: document.mimeType,
-    sizeLabel: estimateSizeLabel(document.base64Data),
+    sizeLabel: estimateSizeLabel(byteSize),
     storageKey: document.storageKey ?? "",
     uploadedAt: document.uploadedAt.toISOString(),
     verificationStatus: getDocumentVerificationStatusLabel(document.verificationStatus),
     rawVerificationStatus: document.verificationStatus,
-    previewUrl: resolveStoredDocumentPreviewUrl({
-      url: null,
-      mimeType: document.mimeType,
-      base64: document.base64Data,
-    }),
+    previewUrl: effectivePreviewUrl,
     suspicious: document.suspicious || undefined,
     suspiciousReason: document.suspiciousReason ?? undefined,
     suspiciousConfidence: document.suspiciousScore ?? undefined,

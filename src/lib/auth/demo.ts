@@ -2,10 +2,11 @@ import type { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 import type { AppRole } from "@/lib/auth/config";
+import demoUsersJson from "@/lib/auth/demo-users.json";
 
 export const demoSessionCookieName = "proptech-demo-session";
 
-type DemoUserRecord = {
+export type DemoUserRecord = {
   id: string;
   role: AppRole;
   email: string;
@@ -26,229 +27,7 @@ type DemoSessionPayload = {
   companyName?: string;
 };
 
-export const demoUsers: DemoUserRecord[] = [
-  {
-    id: "demo-tenant-monica-alustiza",
-    role: "tenant",
-    email: "monica.rosa.alustiza+13452513@demo.proptech.ar",
-    password: "demo-13452513",
-    firstName: "Monica Rosa",
-    lastName: "Alustiza",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 13452513 · score_veraz 900",
-  },
-  {
-    id: "demo-tenant-jaime-anderson",
-    role: "tenant",
-    email: "jaime.anderson+19055847@demo.proptech.ar",
-    password: "demo-19055847",
-    firstName: "Jaime",
-    lastName: "Anderson",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 19055847 · score_veraz 950",
-  },
-  {
-    id: "demo-tenant-gonzalo-guevara",
-    role: "tenant",
-    email: "gonzalo.ignacio.guevara+21982982@demo.proptech.ar",
-    password: "demo-21982982",
-    firstName: "Gonzalo Ignacio",
-    lastName: "Guevara",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 21982982 · score_veraz 200",
-  },
-  {
-    id: "demo-tenant-ezequiel-rochistein-tauro",
-    role: "tenant",
-    email: "ezequiel.rochistein.tauro+26169584@demo.proptech.ar",
-    password: "demo-26169584",
-    firstName: "Ezequiel",
-    lastName: "Rochistein Tauro",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 26169584 · score_veraz 120",
-  },
-  {
-    id: "demo-tenant-lisandro-larre",
-    role: "tenant",
-    email: "lisandro.emanuel.larre+33193998@demo.proptech.ar",
-    password: "demo-33193998",
-    firstName: "Lisandro Emanuel",
-    lastName: "Larre",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 33193998 · score_veraz 650",
-  },
-  {
-    id: "demo-tenant-juan-gonzalez-suran",
-    role: "tenant",
-    email: "juan.ignacio.gonzalez.suran+33654321@demo.proptech.ar",
-    password: "demo-33654321",
-    firstName: "Juan Ignacio",
-    lastName: "Gonzalez Suran",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 33654321 · score_veraz 870",
-  },
-  {
-    id: "demo-tenant-laura-martinez",
-    role: "tenant",
-    email: "laura.martinez+81544670@demo.proptech.ar",
-    password: "demo-81544670",
-    firstName: "Laura",
-    lastName: "Martinez",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 81544670 · score_veraz 50",
-  },
-  {
-    id: "demo-tenant-mario-corrales",
-    role: "tenant",
-    email: "mario.luis.de.los.corrales+99999999@demo.proptech.ar",
-    password: "demo-99999999",
-    firstName: "Mario Luis",
-    lastName: "De los Corrales",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 99999999 · score_veraz 300",
-  },
-  {
-    id: "demo-tenant-marta-rodriguez",
-    role: "tenant",
-    email: "marta.rodriguez+10100200@demo.proptech.ar",
-    password: "demo-10100200",
-    firstName: "Marta",
-    lastName: "Rodriguez",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 10100200 · score_veraz 300",
-  },
-  {
-    id: "demo-tenant-jose-calvo",
-    role: "tenant",
-    email: "jose.calvo+11100200@demo.proptech.ar",
-    password: "demo-11100200",
-    firstName: "Jose",
-    lastName: "Calvo",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 11100200 · score_veraz 450",
-  },
-  {
-    id: "demo-tenant-maria-rojas",
-    role: "tenant",
-    email: "maria.rojas+12100200@demo.proptech.ar",
-    password: "demo-12100200",
-    firstName: "María",
-    lastName: "Rojas",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 12100200 · score_veraz 550",
-  },
-  {
-    id: "demo-tenant-estela-gonzalez",
-    role: "tenant",
-    email: "estela.gonzalez+13100200@demo.proptech.ar",
-    password: "demo-13100200",
-    firstName: "Estela",
-    lastName: "Gonzalez",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 13100200 · score_veraz 900",
-  },
-  {
-    id: "demo-tenant-roberto-suarez",
-    role: "tenant",
-    email: "roberto.suarez+14100200@demo.proptech.ar",
-    password: "demo-14100200",
-    firstName: "Roberto",
-    lastName: "Suarez",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 14100200 · score_veraz 200",
-  },
-  {
-    id: "demo-tenant-carlos-pena",
-    role: "tenant",
-    email: "carlos.pena+15100200@demo.proptech.ar",
-    password: "demo-15100200",
-    firstName: "Carlos",
-    lastName: "Pena",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 15100200 · score_veraz 260",
-  },
-  {
-    id: "demo-tenant-juan-nuin",
-    role: "tenant",
-    email: "juan.nuin+16100200@demo.proptech.ar",
-    password: "demo-16100200",
-    firstName: "Juan",
-    lastName: "Nuin",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 16100200 · score_veraz 700",
-  },
-  {
-    id: "demo-tenant-enrique-cha",
-    role: "tenant",
-    email: "enrique.cha+17100200@demo.proptech.ar",
-    password: "demo-17100200",
-    firstName: "Enrique",
-    lastName: "Cha",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 17100200 · score_veraz 90",
-  },
-  {
-    id: "demo-tenant-alberto-badia",
-    role: "tenant",
-    email: "alberto.badia+18100200@demo.proptech.ar",
-    password: "demo-18100200",
-    firstName: "Alberto",
-    lastName: "Badia",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 18100200 · score_veraz 980",
-  },
-  {
-    id: "demo-tenant-ricardo-bene",
-    role: "tenant",
-    email: "ricardo.bene+20100200@demo.proptech.ar",
-    password: "demo-20100200",
-    firstName: "Ricardo",
-    lastName: "Bene",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 20100200 · score_veraz 500",
-  },
-  {
-    id: "demo-tenant-liz-solari",
-    role: "tenant",
-    email: "liz.solari+21100200@demo.proptech.ar",
-    password: "demo-21100200",
-    firstName: "Liz",
-    lastName: "Solari",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 21100200 · score_veraz 230",
-  },
-  {
-    id: "demo-tenant-armando-barrera",
-    role: "tenant",
-    email: "armando.barrera+22100200@demo.proptech.ar",
-    password: "demo-22100200",
-    firstName: "Armando",
-    lastName: "Barrera",
-    source: "excel",
-    reference: "Usuarios.xlsx · DNI 22100200 · score_veraz 0",
-  },
-  {
-    id: "demo-agency-remax-palermo",
-    role: "agency",
-    email: "contacto@remax-palermo.ar",
-    password: "demo-agency",
-    firstName: "Roberto",
-    lastName: "Sánchez",
-    companyName: "RE/MAX Palermo",
-    source: "seed",
-    reference: "prisma/seed.ts",
-  },
-  {
-    id: "demo-admin-plataforma",
-    role: "admin",
-    email: "admin@proptech.ar",
-    password: "demo-admin",
-    firstName: "Admin",
-    lastName: "Plataforma",
-    source: "seed",
-    reference: "prisma/seed.ts",
-  },
-];
+export const demoUsers = demoUsersJson as DemoUserRecord[];
 
 function encodeSession(payload: DemoSessionPayload) {
   return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
@@ -281,64 +60,27 @@ export function findDemoUserByCredentials(role: AppRole, email: string, password
       (user) =>
         user.role === role &&
         user.email.toLowerCase() === normalizedEmail &&
-        user.password === password,
+        user.password === password
     ) ?? null
   );
 }
 
+export function findDemoUserByEmail(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  return demoUsers.find((user) => user.email.toLowerCase() === normalizedEmail) ?? null;
+}
+
 export function getDemoUserForUi() {
   return demoUsers.map((user) => ({
-    role: user.role,
-    email: user.email,
-    password: user.password,
-    label: user.companyName ? user.companyName : `${user.firstName} ${user.lastName}`,
-    reference: user.reference,
-    source: user.source,
+    ...user,
+    label: `${user.firstName} ${user.lastName}`.trim(),
   }));
-}
-
-export function getDemoSessionFromCookieValue(value?: string) {
-  if (!value) {
-    return null;
-  }
-
-  const payload = decodeSession(value);
-
-  if (!payload) {
-    return null;
-  }
-
-  return {
-    role: payload.role,
-    user: {
-      id: payload.id,
-      email: payload.email,
-      app_metadata: {
-        role: payload.role,
-      },
-      user_metadata: {
-        role: payload.role,
-        first_name: payload.firstName,
-        last_name: payload.lastName,
-        company_name: payload.companyName,
-      },
-    },
-    session: {
-      user: {
-        id: payload.id,
-        email: payload.email,
-      },
-    },
-  };
-}
-
-export async function getDemoSessionFromCookies() {
-  const cookieStore = await cookies();
-  return getDemoSessionFromCookieValue(cookieStore.get(demoSessionCookieName)?.value);
 }
 
 export async function setDemoSessionCookie(user: DemoUserRecord) {
   const cookieStore = await cookies();
+
   cookieStore.set(demoSessionCookieName, encodeSession(buildSessionPayload(user)), {
     httpOnly: true,
     sameSite: "lax",
@@ -353,7 +95,55 @@ export async function clearDemoSessionCookie() {
   cookieStore.delete(demoSessionCookieName);
 }
 
-export function applyDemoSessionToResponse(response: NextResponse, user: DemoUserRecord) {
+export async function getDemoSessionFromCookies() {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(demoSessionCookieName)?.value;
+
+  if (!raw) {
+    return null;
+  }
+
+  const payload = decodeSession(raw);
+
+  if (!payload) {
+    return null;
+  }
+
+  return {
+    role: payload.role,
+    session: {
+      access_token: raw,
+      refresh_token: "",
+      expires_at: 0,
+      expires_in: 0,
+      token_type: "bearer",
+      user: {
+        id: payload.id,
+        email: payload.email,
+        app_metadata: { role: payload.role },
+        user_metadata: {
+          first_name: payload.firstName,
+          last_name: payload.lastName,
+          company_name: payload.companyName,
+          role: payload.role,
+        },
+      },
+    },
+    user: {
+      id: payload.id,
+      email: payload.email,
+      app_metadata: { role: payload.role },
+      user_metadata: {
+        first_name: payload.firstName,
+        last_name: payload.lastName,
+        company_name: payload.companyName,
+        role: payload.role,
+      },
+    },
+  };
+}
+
+export function attachDemoSessionHeader(response: NextResponse, user: DemoUserRecord) {
   response.cookies.set(demoSessionCookieName, encodeSession(buildSessionPayload(user)), {
     httpOnly: true,
     sameSite: "lax",
@@ -365,6 +155,14 @@ export function applyDemoSessionToResponse(response: NextResponse, user: DemoUse
   return response;
 }
 
-export function getDemoSessionFromRequest(request: NextRequest) {
-  return getDemoSessionFromCookieValue(request.cookies.get(demoSessionCookieName)?.value);
+export function readDemoSessionFromRequest(request: NextRequest) {
+  const raw = request.cookies.get(demoSessionCookieName)?.value;
+
+  if (!raw) {
+    return null;
+  }
+
+  return decodeSession(raw);
 }
+
+export const getDemoSessionFromRequest = readDemoSessionFromRequest;

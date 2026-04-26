@@ -6,7 +6,7 @@ import {
   getDocumentVerificationStatusLabel,
   getDocumentVerificationStatusTone,
 } from "@/lib/documents";
-import { resolveStoredDocumentPreviewUrl } from "@/lib/storage";
+import { resolveStoredDocumentPreviewUrlFromStorage } from "@/lib/storage-server";
 import { prisma } from "@/lib/db/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,7 @@ export default async function AdminDocumentsQueuePage({
       displayName: true,
       fileName: true,
       mimeType: true,
+      storageKey: true,
       url: true,
       base64Data: true,
       suspiciousReason: true,
@@ -57,6 +58,17 @@ export default async function AdminDocumentsQueuePage({
       },
     },
   });
+  const documentsWithPreview = await Promise.all(
+    documents.map(async (document) => ({
+      ...document,
+      previewUrl: await resolveStoredDocumentPreviewUrlFromStorage({
+        url: document.url,
+        storageKey: document.storageKey,
+        mimeType: document.mimeType,
+        base64: document.base64Data,
+      }),
+    }))
+  );
 
   const statusClasses = {
     amber: "border-amber-200 bg-amber-50 text-amber-700",
@@ -88,7 +100,7 @@ export default async function AdminDocumentsQueuePage({
         </div>
       ) : null}
 
-      {documents.length === 0 ? (
+      {documentsWithPreview.length === 0 ? (
         <section className="bg-background rounded-4xl border p-8 shadow-sm">
           <p className="text-sm tracking-[0.22em] text-emerald-700 uppercase">Sin pendientes</p>
           <h3 className="mt-3 text-2xl font-semibold">No hay documentos esperando revisión.</h3>
@@ -98,15 +110,10 @@ export default async function AdminDocumentsQueuePage({
         </section>
       ) : (
         <section className="grid gap-4">
-          {documents.map((document) => {
+          {documentsWithPreview.map((document) => {
             const tone = getDocumentVerificationStatusTone(document.verificationStatus);
             const tenantName =
               `${document.tenantProfile.user.firstName} ${document.tenantProfile.user.lastName}`.trim();
-            const previewUrl = resolveStoredDocumentPreviewUrl({
-              url: document.url,
-              mimeType: document.mimeType,
-              base64: document.base64Data,
-            });
 
             return (
               <article key={document.id} className="bg-background rounded-4xl border p-6 shadow-sm">
@@ -149,9 +156,9 @@ export default async function AdminDocumentsQueuePage({
                     </div>
 
                     <div className="flex flex-wrap gap-3">
-                      {previewUrl ? (
+                      {document.previewUrl ? (
                         <a
-                          href={previewUrl}
+                          href={document.previewUrl}
                           target="_blank"
                           rel="noreferrer"
                           className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
