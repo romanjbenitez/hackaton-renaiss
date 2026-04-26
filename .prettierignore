@@ -1,0 +1,7 @@
+.next
+node_modules
+src/generated
+AGENTS.md
+CLAUDE.md
+src/**/CLAUDE.md
+prisma/CLAUDE.md

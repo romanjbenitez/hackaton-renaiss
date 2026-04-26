@@ -1,0 +1,315 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  TENANT
+  AGENCY
+  ADMIN
+}
+
+enum AgencyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TenantProfileType {
+  EMPLOYED
+  MONOTRIBUTISTA
+  SELF_EMPLOYED
+  RETIRED
+}
+
+enum DocumentType {
+  DNI
+  PAYSLIP
+  MONOTRIBUTO_CERTIFICATE
+  MONOTRIBUTO_PAYMENT
+  INCOME_AFFIDAVIT
+  RETIREMENT_RECEIPT
+  MORTGAGE_GUARANTEE
+  CAUTION_INSURANCE
+  CONTRACT
+  OTHER
+}
+
+enum DocumentVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  FLAGGED
+}
+
+enum GuaranteeType {
+  MORTGAGE
+  CAUTION_INSURANCE
+  NONE
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  PH
+  STUDIO
+  OFFICE
+  COMMERCIAL
+  LAND
+  OTHER
+}
+
+enum PropertyStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  RENTED
+  ARCHIVED
+}
+
+enum CandidacyStatus {
+  SUBMITTED
+  IN_REVIEW
+  SHORTLISTED
+  REJECTED
+  SELECTED
+  WITHDRAWN
+}
+
+enum CandidacySource {
+  PLATFORM
+  MANUAL
+}
+
+enum TransactionStageType {
+  CANDIDATE_SELECTED
+  DOCS_COMPLETE
+  CONTRACT_REVIEW
+  CONTRACT_SIGNED
+  KEYS_DELIVERED
+}
+
+model User {
+  id                     String              @id @default(cuid())
+  authUserId             String?             @unique
+  email                  String              @unique
+  passwordHash           String?
+  firstName              String
+  lastName               String
+  phone                  String?
+  role                   UserRole
+  isActive               Boolean             @default(true)
+  agencyStatus           AgencyStatus?
+  companyName            String?
+  companySlug            String?             @unique
+  companyTaxId           String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  tenantProfile          TenantProfile?
+  managedProperties      Property[]          @relation("AgencyProperties")
+  submittedCandidacies   Candidacy[]         @relation("TenantCandidacies")
+  createdTransactions    TransactionState[]  @relation("TransactionStateAuthor")
+  transactionNotes       TransactionNote[]   @relation("TransactionNoteAuthor")
+  uploadedDocuments      Document[]          @relation("UploadedByUser")
+  flaggedDocuments       Document[]          @relation("ReviewedByUser")
+}
+
+model TenantProfile {
+  id                         String            @id @default(cuid())
+  userId                     String            @unique
+  dni                        String            @unique
+  profileType                TenantProfileType
+  occupation                 String?
+  monthlyIncome              Decimal?          @db.Decimal(12, 2)
+  verazScore                 Int?
+  trustScore                 Int               @default(0)
+  trustScoreExplanation      String?
+  improvementSuggestion      String?
+  profileSummary             String?
+  hasPets                    Boolean           @default(false)
+  isSmoker                   Boolean           @default(false)
+  familyMembers              Int               @default(1)
+  hasChildren                Boolean           @default(false)
+  guaranteeType              GuaranteeType     @default(NONE)
+  guaranteeDetails           String?
+  platformHistoryScore       Int?
+  onboardingCompletedAt      DateTime?
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+  user                       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents                  Document[]
+  candidacies                Candidacy[]
+
+  @@index([trustScore])
+  @@index([profileType])
+}
+
+model Document {
+  id                 String                     @id @default(cuid())
+  tenantProfileId    String
+  uploadedByUserId   String?
+  reviewedByUserId   String?
+  type               DocumentType
+  displayName        String
+  fileName           String
+  mimeType           String
+  storageKey         String?
+  url                String?
+  base64Data         String?
+  verificationStatus DocumentVerificationStatus @default(PENDING)
+  suspicious         Boolean                    @default(false)
+  suspiciousReason   String?
+  suspiciousScore    Float?
+  visibleToClient    Boolean                    @default(false)
+  uploadedAt         DateTime                   @default(now())
+  verifiedAt         DateTime?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  tenantProfile      TenantProfile              @relation(fields: [tenantProfileId], references: [id], onDelete: Cascade)
+  uploadedByUser     User?                      @relation("UploadedByUser", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  reviewedByUser     User?                      @relation("ReviewedByUser", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantProfileId, type])
+  @@index([verificationStatus])
+}
+
+model Property {
+  id                       String           @id @default(cuid())
+  agencyId                 String
+  title                    String
+  description              String?
+  addressLine              String
+  city                     String
+  province                 String
+  postalCode               String?
+  propertyType             PropertyType
+  status                   PropertyStatus   @default(DRAFT)
+  squareMeters             Int?
+  bedrooms                 Int?
+  bathrooms                Int?
+  price                    Decimal          @db.Decimal(12, 2)
+  currency                 String           @default("ARS")
+  expenses                 Decimal?         @db.Decimal(12, 2)
+  externalUrl              String?
+  photos                   String[]
+  targetTrustScore         Int?
+  acceptedGuarantees       GuaranteeType[]
+  acceptsPets              Boolean          @default(false)
+  acceptsSmokers           Boolean          @default(false)
+  acceptsChildren          Boolean          @default(true)
+  preferredProfile         TenantProfileType?
+  compatibilityNotes       String?
+  publishedAt              DateTime?
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+  agency                   User             @relation("AgencyProperties", fields: [agencyId], references: [id], onDelete: Cascade)
+  candidacies              Candidacy[]
+  transactions             Transaction[]
+
+  @@index([agencyId, status])
+  @@index([city, status])
+}
+
+model Candidacy {
+  id                        String           @id @default(cuid())
+  tenantId                  String?
+  tenantProfileId           String?
+  propertyId                String
+  status                    CandidacyStatus  @default(SUBMITTED)
+  source                    CandidacySource  @default(PLATFORM)
+  scoreAtSubmission         Int
+  monthlyIncome             Decimal?         @db.Decimal(12, 2)
+  rentToIncomeRatio         Float?
+  guaranteeType             GuaranteeType?
+  aiCompatibilityScore      Int?
+  aiCompatibilityExplanation String?
+  aiCompatibilityMatchPoints String[]
+  aiCompatibilityConflicts   String[]
+  manualCandidateName       String?
+  manualCandidateEmail      String?
+  manualCandidatePhone      String?
+  notes                     String?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  property                  Property         @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant                    User?            @relation("TenantCandidacies", fields: [tenantId], references: [id], onDelete: SetNull)
+  tenantProfile             TenantProfile?   @relation(fields: [tenantProfileId], references: [id], onDelete: SetNull)
+  transaction               Transaction?
+
+  @@unique([tenantId, propertyId], map: "tenant_property_unique")
+  @@index([propertyId, status])
+  @@index([tenantProfileId])
+}
+
+model Transaction {
+  id                 String                 @id @default(cuid())
+  propertyId         String
+  candidacyId        String                 @unique
+  currentStage       TransactionStageType   @default(CANDIDATE_SELECTED)
+  shareToken         String                 @unique @default(uuid())
+  clientEmail        String?
+  ownerName          String?
+  ownerEmail         String?
+  startedAt          DateTime               @default(now())
+  completedAt        DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  property           Property               @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  candidacy          Candidacy              @relation(fields: [candidacyId], references: [id], onDelete: Cascade)
+  states             TransactionState[]
+  notes              TransactionNote[]
+  documents          TransactionDocument[]
+
+  @@index([propertyId, currentStage])
+  @@index([shareToken])
+}
+
+model TransactionState {
+  id            String               @id @default(cuid())
+  transactionId String
+  stage         TransactionStageType
+  note          String?
+  changedById   String?
+  isCurrent     Boolean              @default(false)
+  createdAt     DateTime             @default(now())
+  transaction   Transaction          @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  changedBy     User?                @relation("TransactionStateAuthor", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([transactionId, stage])
+  @@index([transactionId, isCurrent])
+}
+
+model TransactionNote {
+  id            String       @id @default(cuid())
+  transactionId String
+  authorId      String?
+  content       String
+  visibleToClient Boolean    @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  transaction   Transaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  author        User?        @relation("TransactionNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([transactionId, visibleToClient])
+}
+
+model TransactionDocument {
+  id             String               @id @default(cuid())
+  transactionId  String
+  stage          TransactionStageType
+  name           String
+  mimeType       String
+  url            String?
+  storageKey     String?
+  visibleToClient Boolean             @default(false)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  transaction    Transaction          @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId, stage])
+}
