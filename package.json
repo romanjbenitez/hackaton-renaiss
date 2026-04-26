@@ -11,7 +11,7 @@
     "lint:fix": "eslint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "rm -rf .codex-test-dist && tsc -p tsconfig.test.json && node --test .codex-test-dist/tests/**/*.test.js",
+    "test": "rm -rf .codex-test-dist && tsc -p tsconfig.test.json && node --test .codex-test-dist/tests/*.test.js",
     "type-check": "rm -rf .next/types .next/dev/types && next typegen && tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
