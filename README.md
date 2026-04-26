@@ -282,14 +282,3 @@ Las credenciales efectivas del modo demo están gestionadas por [src/lib/auth/de
 
 5. **Agregar tests de integración del flujo de transacción**  
    El circuito de estados, notas, documentos y portal compartido es el núcleo operativo del producto y merece cobertura de integración o end-to-end para reducir regresiones.
-
-## Resumen para evaluación
-
-Si este repo se revisa técnicamente, los puntos más fuertes hoy son:
-
-- tipado consistente con TypeScript + Prisma
-- separación razonable por dominios (`tenant`, `agency`, `auth`, `ai`)
-- CI automatizada con checks reales
-- seguridad mejorada en rutas sensibles
-- fallbacks cuando servicios externos no están configurados
-- tests unitarios sobre reglas de negocio críticas
