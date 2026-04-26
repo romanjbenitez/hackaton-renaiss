@@ -42,17 +42,32 @@ export default async function RegisterAgencyPage({ searchParams }: RegisterAgenc
 
             <label className="space-y-2 md:col-span-2">
               <span className="text-sm font-medium">Nombre de la inmobiliaria</span>
-              <input className="h-12 w-full rounded-2xl border px-4" name="companyName" required />
+              <input
+                className="h-12 w-full rounded-2xl border px-4"
+                name="companyName"
+                placeholder="Inmobiliaria Centro SRL"
+                required
+              />
             </label>
 
             <label className="space-y-2">
               <span className="text-sm font-medium">Nombre</span>
-              <input className="h-12 w-full rounded-2xl border px-4" name="firstName" required />
+              <input
+                className="h-12 w-full rounded-2xl border px-4"
+                name="firstName"
+                placeholder="Lucía"
+                required
+              />
             </label>
 
             <label className="space-y-2">
               <span className="text-sm font-medium">Apellido</span>
-              <input className="h-12 w-full rounded-2xl border px-4" name="lastName" required />
+              <input
+                className="h-12 w-full rounded-2xl border px-4"
+                name="lastName"
+                placeholder="Gómez"
+                required
+              />
             </label>
 
             <label className="space-y-2 md:col-span-2">
@@ -61,13 +76,18 @@ export default async function RegisterAgencyPage({ searchParams }: RegisterAgenc
                 className="h-12 w-full rounded-2xl border px-4"
                 name="email"
                 type="email"
+                placeholder="contacto@inmobiliaria.com"
                 required
               />
             </label>
 
             <label className="space-y-2">
               <span className="text-sm font-medium">Teléfono</span>
-              <input className="h-12 w-full rounded-2xl border px-4" name="phone" />
+              <input
+                className="h-12 w-full rounded-2xl border px-4"
+                name="phone"
+                placeholder="3415559876"
+              />
             </label>
 
             <label className="space-y-2">
@@ -76,9 +96,13 @@ export default async function RegisterAgencyPage({ searchParams }: RegisterAgenc
                 className="h-12 w-full rounded-2xl border px-4"
                 name="password"
                 type="password"
+                placeholder="Mínimo 8 caracteres"
                 required
               />
             </label>
+            <p className="text-muted-foreground text-sm md:col-span-2">
+              La cuenta queda pendiente de aprobación. Después vas a poder publicar propiedades, revisar candidatos y operar transacciones.
+            </p>
 
             <button
               className={cn(buttonVariants({ size: "lg" }), "mt-2 rounded-2xl md:col-span-2")}

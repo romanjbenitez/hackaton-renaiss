@@ -21,6 +21,14 @@ export default async function TenantOnboardingPage({ searchParams }: TenantOnboa
   const currentStep = getSearchValue(params.step) === "2" ? "2" : "1";
   const error = getSearchValue(params.error);
   const draft = await getTenantOnboardingDraft();
+  const step1Completed = Boolean(
+    draft.step1?.dni &&
+      draft.step1?.occupation &&
+      draft.step1?.monthlyIncome &&
+      draft.step1?.profileType
+  );
+  const step2Completed = Boolean(draft.step2);
+  const progress = step1Completed && step2Completed ? 100 : step1Completed ? 50 : 0;
 
   return (
     <main className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
@@ -29,17 +37,28 @@ export default async function TenantOnboardingPage({ searchParams }: TenantOnboa
         <h1 className="mt-4 text-4xl font-semibold text-balance">
           Construí tu pasaporte inquilino en dos pasos.
         </h1>
+        <div className="mt-6">
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span>Progreso</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="bg-muted h-2 rounded-full">
+            <div className="h-2 rounded-full bg-emerald-600 transition-all" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
         <div className="mt-8 space-y-3">
           {[
             {
               id: "1",
               title: "Datos personales",
               description: "DNI, tipo de perfil, ocupación e ingresos.",
+              completed: step1Completed,
             },
             {
               id: "2",
               title: "Estilo de vida",
               description: "Mascotas, fumador, grupo familiar y garantía.",
+              completed: step2Completed,
             },
           ].map((step) => (
             <div
@@ -49,7 +68,19 @@ export default async function TenantOnboardingPage({ searchParams }: TenantOnboa
                 currentStep === step.id ? "border-foreground bg-muted" : "border-border"
               )}
             >
-              <p className="text-sm font-medium">{step.title}</p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium">{step.title}</p>
+                <span
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-medium",
+                    step.completed
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                      : "border-slate-200 bg-slate-50 text-slate-700"
+                  )}
+                >
+                  {step.completed ? "Completo" : "Pendiente"}
+                </span>
+              </div>
               <p className="text-muted-foreground mt-1 text-sm">{step.description}</p>
             </div>
           ))}

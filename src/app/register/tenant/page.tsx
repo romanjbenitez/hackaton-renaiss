@@ -39,12 +39,22 @@ export default async function RegisterTenantPage({ searchParams }: RegisterTenan
 
             <label className="space-y-2">
               <span className="text-sm font-medium">Nombre</span>
-              <input className="h-12 w-full rounded-2xl border px-4" name="firstName" required />
+              <input
+                className="h-12 w-full rounded-2xl border px-4"
+                name="firstName"
+                placeholder="María"
+                required
+              />
             </label>
 
             <label className="space-y-2">
               <span className="text-sm font-medium">Apellido</span>
-              <input className="h-12 w-full rounded-2xl border px-4" name="lastName" required />
+              <input
+                className="h-12 w-full rounded-2xl border px-4"
+                name="lastName"
+                placeholder="Pérez"
+                required
+              />
             </label>
 
             <label className="space-y-2 md:col-span-2">
@@ -53,13 +63,18 @@ export default async function RegisterTenantPage({ searchParams }: RegisterTenan
                 className="h-12 w-full rounded-2xl border px-4"
                 name="email"
                 type="email"
+                placeholder="maria@correo.com"
                 required
               />
             </label>
 
             <label className="space-y-2">
               <span className="text-sm font-medium">Teléfono</span>
-              <input className="h-12 w-full rounded-2xl border px-4" name="phone" />
+              <input
+                className="h-12 w-full rounded-2xl border px-4"
+                name="phone"
+                placeholder="3415551234"
+              />
             </label>
 
             <label className="space-y-2">
@@ -68,9 +83,13 @@ export default async function RegisterTenantPage({ searchParams }: RegisterTenan
                 className="h-12 w-full rounded-2xl border px-4"
                 name="password"
                 type="password"
+                placeholder="Mínimo 8 caracteres"
                 required
               />
             </label>
+            <p className="text-muted-foreground text-sm md:col-span-2">
+              Usá una contraseña fácil de recordar para la demo. Después vas a completar perfil, ingresos y documentación.
+            </p>
 
             <button
               className={cn(buttonVariants({ size: "lg" }), "mt-2 rounded-2xl md:col-span-2")}

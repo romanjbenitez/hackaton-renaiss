@@ -155,6 +155,13 @@ export function DocumentsManager({
 
   const requiredDocuments = useMemo(() => getRequiredDocuments(profileType), [profileType]);
 
+  function getLatestDocumentByType(documentType: string) {
+    return (
+      documents.find((document) => document.documentType === documentType) ??
+      null
+    );
+  }
+
   async function handleUpload(documentType: string, label: string, input: UploadedDocumentInput) {
     const formData = new FormData();
     formData.set("documentType", documentType);
@@ -179,7 +186,10 @@ export function DocumentsManager({
       ...uploadResult.document,
       sizeLabel: uploadResult.document.sizeLabel === "Sin tamaño" ? input.sizeLabel : uploadResult.document.sizeLabel,
     };
-    setDocuments((currentDocuments) => [newDoc, ...currentDocuments]);
+    setDocuments((currentDocuments) => [
+      newDoc,
+      ...currentDocuments.filter((document) => document.documentType !== newDoc.documentType),
+    ]);
 
     try {
       const response = await fetch("/api/ai/check-document", {
@@ -284,13 +294,21 @@ export function DocumentsManager({
 
         <div className="space-y-4">
           {requiredDocuments.map((document) => (
-            <DocumentUploader
-              key={document.documentType}
-              label={document.label}
-              helperText={document.helperText}
-              accept={document.accept}
-              onUpload={(input) => handleUpload(document.documentType, document.label, input)}
-            />
+            (() => {
+              const currentDocument = getLatestDocumentByType(document.documentType);
+
+              return (
+                <DocumentUploader
+                  key={document.documentType}
+                  label={document.label}
+                  helperText={document.helperText}
+                  accept={document.accept}
+                  currentFileName={currentDocument?.fileName ?? null}
+                  currentStatus={currentDocument?.verificationStatus ?? null}
+                  onUpload={(input) => handleUpload(document.documentType, document.label, input)}
+                />
+              );
+            })()
           ))}
         </div>
 
@@ -353,14 +371,22 @@ export function DocumentsManager({
 
           {guaranteeDocumentType ? (
             <div className="mt-4">
+              {(() => {
+                const currentDocument = getLatestDocumentByType(guaranteeDocumentType);
+
+                return (
               <DocumentUploader
                 label={getGuaranteeLabel(guaranteeType)}
                 helperText="Subí el documento principal asociado a la garantía elegida."
                 accept=".pdf,image/*"
+                currentFileName={currentDocument?.fileName ?? null}
+                currentStatus={currentDocument?.verificationStatus ?? null}
                 onUpload={(input) =>
                   handleUpload(guaranteeDocumentType, getGuaranteeLabel(guaranteeType), input)
                 }
               />
+                );
+              })()}
             </div>
           ) : null}
         </div>

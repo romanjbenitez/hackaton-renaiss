@@ -37,6 +37,14 @@ export default async function AgencyPropertiesPage() {
 
   const properties = await getAgencyProperties(agency.id);
   const publishedCount = properties.filter((property) => property.status === "PUBLISHED").length;
+  const averageTicket =
+    properties.length > 0
+      ? formatCurrency(
+          Math.round(
+            properties.reduce((total, property) => total + property.price, 0) / properties.length
+          )
+        )
+      : "—";
 
   return (
     <main className="space-y-6">
@@ -68,14 +76,7 @@ export default async function AgencyPropertiesPage() {
           </div>
           <div className="rounded-3xl border p-5">
             <p className="text-muted-foreground text-sm">Ticket promedio</p>
-            <p className="mt-2 text-3xl font-semibold">
-              {formatCurrency(
-                Math.round(
-                  properties.reduce((total, property) => total + property.price, 0) /
-                    properties.length
-                )
-              )}
-            </p>
+            <p className="mt-2 text-3xl font-semibold">{averageTicket}</p>
           </div>
         </div>
       </section>
@@ -142,6 +143,12 @@ export default async function AgencyPropertiesPage() {
                       className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
                     >
                       Ver detalle
+                    </Link>
+                    <Link
+                      href={`/agency/properties/${property.id}/candidates`}
+                      className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
+                    >
+                      Ver candidatos
                     </Link>
                   </div>
                 </div>

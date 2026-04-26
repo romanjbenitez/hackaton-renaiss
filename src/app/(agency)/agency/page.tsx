@@ -128,6 +128,18 @@ export default async function AgencyDashboardPage() {
             10
         ) / 10
       : null;
+  const propertiesWithoutCandidates = properties.filter(
+    (property) => !candidacyStats.some((item) => item.propertyId === property.id)
+  );
+  const transactionsPendingDocs = activeTransactions.filter((transaction) => transaction.currentStage === "CANDIDATE_SELECTED");
+  const mostDemandedProperties = [...candidacyStats]
+    .sort((left, right) => right._count._all - left._count._all)
+    .slice(0, 3)
+    .map((item) => ({
+      property: properties.find((property) => property.id === item.propertyId),
+      count: item._count._all,
+    }))
+    .filter((item) => item.property);
   const propertyStatusData = [
     { name: "Publicadas", value: publishedCount, color: "#0ea5e9" },
     { name: "Borradores", value: draftCount, color: "#f59e0b" },
@@ -234,6 +246,43 @@ export default async function AgencyDashboardPage() {
         propertyStatusData={propertyStatusData}
         transactionStageData={transactionStageData}
       />
+
+      <section className="grid gap-6 lg:grid-cols-3">
+        <div className="bg-background rounded-4xl border p-8 shadow-sm">
+          <p className="text-sm tracking-[0.22em] text-sky-700 uppercase">Acción rápida</p>
+          <h3 className="mt-3 text-2xl font-semibold">Propiedades sin candidatos</h3>
+          <p className="mt-5 text-4xl font-semibold">{propertiesWithoutCandidates.length}</p>
+          <p className="text-muted-foreground mt-3 text-sm leading-7">
+            Publicaciones activas que todavía no recibieron postulaciones y conviene revisar.
+          </p>
+        </div>
+
+        <div className="bg-background rounded-4xl border p-8 shadow-sm">
+          <p className="text-sm tracking-[0.22em] text-sky-700 uppercase">Embudo</p>
+          <h3 className="mt-3 text-2xl font-semibold">Operaciones frenadas en documentación</h3>
+          <p className="mt-5 text-4xl font-semibold">{transactionsPendingDocs.length}</p>
+          <p className="text-muted-foreground mt-3 text-sm leading-7">
+            Casos en etapa inicial donde falta empujar el cierre documental del candidato.
+          </p>
+        </div>
+
+        <div className="bg-background rounded-4xl border p-8 shadow-sm">
+          <p className="text-sm tracking-[0.22em] text-sky-700 uppercase">Demanda</p>
+          <h3 className="mt-3 text-2xl font-semibold">Propiedades más consultadas</h3>
+          <div className="mt-5 space-y-3 text-sm">
+            {mostDemandedProperties.length > 0 ? (
+              mostDemandedProperties.map((item) => (
+                <div key={item.property!.id} className="rounded-2xl border p-3">
+                  <p className="font-medium">{item.property!.title}</p>
+                  <p className="text-muted-foreground mt-1">{item.count} candidatura(s)</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-muted-foreground">Todavía no hay propiedades con demanda suficiente para destacar.</p>
+            )}
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

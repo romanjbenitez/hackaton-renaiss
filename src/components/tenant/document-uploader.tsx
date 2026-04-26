@@ -17,6 +17,8 @@ type DocumentUploaderProps = {
   label: string;
   helperText: string;
   accept?: string;
+  currentFileName?: string | null;
+  currentStatus?: string | null;
   onUpload: (document: UploadedDocumentInput) => void;
 };
 
@@ -26,7 +28,14 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function DocumentUploader({ label, helperText, accept, onUpload }: DocumentUploaderProps) {
+export function DocumentUploader({
+  label,
+  helperText,
+  accept,
+  currentFileName,
+  currentStatus,
+  onUpload,
+}: DocumentUploaderProps) {
   const inputId = useId();
   const [previewName, setPreviewName] = useState<string | null>(null);
 
@@ -42,9 +51,18 @@ export function DocumentUploader({ label, helperText, accept, onUpload }: Docume
           htmlFor={inputId}
           className={cn(buttonVariants({ variant: "outline" }), "cursor-pointer rounded-2xl")}
         >
-          Seleccionar archivo
+          {currentFileName ? "Reemplazar archivo" : "Seleccionar archivo"}
         </label>
       </div>
+
+      {currentFileName ? (
+        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+          <p className="font-medium">Ya cargado: {currentFileName}</p>
+          <p className="text-xs opacity-80">
+            {currentStatus ? `Estado actual: ${currentStatus}.` : "Podés subir una versión nueva si hace falta."}
+          </p>
+        </div>
+      ) : null}
 
       <input
         id={inputId}

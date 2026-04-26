@@ -84,6 +84,13 @@ export default async function TenantDashboardPage() {
           : "Definir estilo de vida, grupo familiar y garantía.",
         "Generar el score de confianza inicial.",
       ];
+  const primaryAction = !draft.step1
+    ? { href: "/tenant/onboarding", label: "Empezar onboarding" }
+    : !draft.step2
+      ? { href: "/tenant/onboarding?step=2", label: "Completar onboarding" }
+      : !hasDniDocument || !hasIncomeProof || !hasGuaranteeProof
+        ? { href: "/tenant/documents", label: "Completar legajo" }
+        : { href: "/tenant/profile", label: "Ver perfil completo" };
 
   return (
     <main className="grid gap-6 md:grid-cols-2">
@@ -110,10 +117,10 @@ export default async function TenantDashboardPage() {
             Ver publicaciones
           </Link>
           <Link
-            href={hasProfile ? "/tenant/onboarding?step=2" : "/tenant/onboarding"}
+            href={primaryAction.href}
             className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
           >
-            {hasProfile ? "Continuar onboarding" : "Empezar onboarding"}
+            {primaryAction.label}
           </Link>
           {hasCompletedOnboarding ? (
             <Link

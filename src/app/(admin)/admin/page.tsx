@@ -5,6 +5,14 @@ import { prisma } from "@/lib/db/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const stageLabels: Record<string, string> = {
+  CANDIDATE_SELECTED: "Candidato seleccionado",
+  DOCS_COMPLETE: "Documentación completa",
+  CONTRACT_REVIEW: "Revisión de contrato",
+  CONTRACT_SIGNED: "Contrato firmado",
+  KEYS_DELIVERED: "Llaves entregadas",
+};
+
 export default function AdminDashboardPage() {
   return <AdminDashboardContent />;
 }
@@ -40,6 +48,7 @@ async function AdminDashboardContent() {
     agencyCounts.find((item) => item.agencyStatus === AgencyStatus.PENDING)?._count._all ?? 0;
   const rejectedAgencies =
     agencyCounts.find((item) => item.agencyStatus === AgencyStatus.REJECTED)?._count._all ?? 0;
+  const activeTransactionsCount = transactionsByStage.reduce((sum, item) => sum + item._count._all, 0);
 
   return (
     <main className="grid gap-6 md:grid-cols-2">
@@ -68,10 +77,7 @@ async function AdminDashboardContent() {
           <MetricCard label="Inmobiliarias aprobadas" value={approvedAgencies} />
           <MetricCard label="Inmobiliarias pendientes" value={pendingAgencies} />
           <MetricCard label="Inquilinos activos" value={tenantsCount} />
-          <MetricCard
-            label="Transacciones activas"
-            value={transactionsByStage.reduce((sum, item) => sum + item._count._all, 0)}
-          />
+          <MetricCard label="Transacciones activas" value={activeTransactionsCount} />
         </div>
       </section>
       <section className="bg-background rounded-4xl border p-8 shadow-sm md:col-span-2">
@@ -80,11 +86,20 @@ async function AdminDashboardContent() {
           {transactionsByStage.map((item) => (
             <MetricCard
               key={item.currentStage}
-              label={item.currentStage.replaceAll("_", " ")}
+              label={stageLabels[item.currentStage] ?? item.currentStage.replaceAll("_", " ")}
               value={item._count._all}
             />
           ))}
           <MetricCard label="Inmobiliarias rechazadas" value={rejectedAgencies} />
+        </div>
+      </section>
+
+      <section className="bg-background rounded-4xl border p-8 shadow-sm md:col-span-2">
+        <p className="text-sm tracking-[0.22em] text-rose-700 uppercase">Foco operativo</p>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <MetricCard label="Pendientes de aprobación" value={pendingAgencies} />
+          <MetricCard label="Aprobadas" value={approvedAgencies} />
+          <MetricCard label="Transacciones en curso" value={activeTransactionsCount} />
         </div>
       </section>
     </main>

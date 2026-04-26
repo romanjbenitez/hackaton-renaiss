@@ -10,6 +10,7 @@ type PropertyCardProps = {
   squareMeters: number;
   propertyType: string;
   compatibilityScore: number;
+  compatibilitySummary?: string;
   compatibilityExplanation?: string;
   compatibilityMatchPoints?: string[];
   compatibilityConflicts?: string[];
@@ -27,6 +28,7 @@ export function PropertyCard({
   squareMeters,
   propertyType,
   compatibilityScore,
+  compatibilitySummary,
   compatibilityExplanation,
   compatibilityMatchPoints,
   compatibilityConflicts,
@@ -69,6 +71,12 @@ export function PropertyCard({
             <p className="mt-1 font-medium">{squareMeters} m²</p>
           </div>
         </div>
+
+        {compatibilitySummary ? (
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+            {compatibilitySummary}
+          </div>
+        ) : null}
 
         {applicationStatus ? (
           <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-950">
