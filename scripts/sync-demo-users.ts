@@ -7,6 +7,29 @@ import demoUsers from "../src/lib/auth/demo-users.json";
 
 type DemoUserRecord = (typeof demoUsers)[number];
 
+function hasConfiguredEnvValue(value: string | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized) {
+    return false;
+  }
+
+  const placeholderValues = new Set([
+    "TU_ANON_KEY",
+    "TU_SERVICE_ROLE_KEY",
+    "your-anon-key",
+    "your-service-role-key",
+    "your-project-url",
+    "https://your-project.supabase.co",
+  ]);
+
+  return !placeholderValues.has(normalized);
+}
+
 function loadEnvFile(filePath: string) {
   if (!existsSync(filePath)) {
     return;
@@ -144,22 +167,24 @@ async function syncUser(supabase: SupabaseClient, user: DemoUserRecord) {
 async function main() {
   ensureEnvLoaded();
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (
+    !hasConfiguredEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL) ||
+    !hasConfiguredEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY)
+  ) {
     throw new Error(
-      "Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY. Configuralas en .env o .env.local."
+      "Faltan credenciales reales de Supabase. Configurá NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en .env o .env.local."
     );
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 
   const bucketName = await ensureBucket(supabase);
   const results = [];

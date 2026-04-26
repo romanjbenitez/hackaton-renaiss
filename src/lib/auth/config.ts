@@ -39,6 +39,36 @@ export function getAuthCallbackUrl(nextPath = "/") {
   return `${appUrl}/auth/callback?next=${encodedNext}`;
 }
 
+function hasConfiguredEnvValue(value: string | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized) {
+    return false;
+  }
+
+  const placeholderValues = new Set([
+    "TU_ANON_KEY",
+    "TU_SERVICE_ROLE_KEY",
+    "your-anon-key",
+    "your-service-role-key",
+    "your-project-url",
+    "https://your-project.supabase.co",
+  ]);
+
+  return !placeholderValues.has(normalized);
+}
+
 export function isSupabaseConfigured() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return (
+    hasConfiguredEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
+    hasConfiguredEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  );
+}
+
+export function isSupabaseEnvValueConfigured(value: string | undefined) {
+  return hasConfiguredEnvValue(value);
 }
