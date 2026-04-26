@@ -106,7 +106,7 @@ export async function POST(request: Request) {
 
   const validated = raw ? documentFraudAiSchema.safeParse(parseJsonFromModelOutput(raw)) : null;
   const result = validated?.success ? validated.data : fallback;
-  const shouldFlagForReview = result.suspicious && result.confidence > 0.7;
+  const shouldFlagForReview = result.suspicious;
 
   if (parsed.data.persist && parsed.data.documentId) {
     await prisma.document.update({

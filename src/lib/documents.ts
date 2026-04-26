@@ -69,6 +69,8 @@ export function getDocumentTenantFeedback(
         ? `Pendiente de revisión. ${reason}`
         : "El documento quedó retenido para revisión manual.";
     default:
-      return reason?.trim().length ? reason : "Documento pendiente de validación.";
+      return reason?.trim().length
+        ? `Pendiente de validación. ${reason}`
+        : "Documento pendiente de validación.";
   }
 }

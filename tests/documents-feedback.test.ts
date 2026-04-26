@@ -18,6 +18,18 @@ test("getDocumentTenantFeedback exposes admin review notes to the tenant", () =>
   assert.equal(feedback, "Documento rechazado. Nota de revisión: la imagen está cortada.");
 });
 
+test("getDocumentTenantFeedback keeps pending documents neutral even with an AI reason", () => {
+  const feedback = getDocumentTenantFeedback(
+    DocumentVerificationStatus.PENDING,
+    "El documento tiene poca evidencia verificable o metadata insuficiente."
+  );
+
+  assert.equal(
+    feedback,
+    "Pendiente de validación. El documento tiene poca evidencia verificable o metadata insuficiente."
+  );
+});
+
 test("mapTenantDocumentFromDatabase keeps tenant-visible review feedback and raw status", () => {
   const mapped = mapTenantDocumentFromDatabase({
     id: "doc-1",

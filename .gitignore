@@ -13,6 +13,9 @@
 # testing
 /coverage
 /.codex-test-dist
+/playwright-report
+/test-results
+/.playwright
 
 # next.js
 /.next/
