@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import demoUsers from "../src/lib/auth/demo-users.json";
 
@@ -59,10 +59,7 @@ function buildMetadata(user: DemoUserRecord) {
   };
 }
 
-async function findUserByEmail(
-  supabase: ReturnType<typeof createClient<any>>,
-  email: string
-) {
+async function findUserByEmail(supabase: SupabaseClient, email: string) {
   const perPage = 200;
 
   for (let page = 1; page <= 10; page += 1) {
@@ -84,7 +81,7 @@ async function findUserByEmail(
   return null;
 }
 
-async function ensureBucket(supabase: ReturnType<typeof createClient<any>>) {
+async function ensureBucket(supabase: SupabaseClient) {
   const bucketName = getBucketName();
   const { data, error } = await supabase.storage.getBucket(bucketName);
 
@@ -104,10 +101,7 @@ async function ensureBucket(supabase: ReturnType<typeof createClient<any>>) {
   return bucketName;
 }
 
-async function syncUser(
-  supabase: ReturnType<typeof createClient<any>>,
-  user: DemoUserRecord
-) {
+async function syncUser(supabase: SupabaseClient, user: DemoUserRecord) {
   const createResult = await supabase.auth.admin.createUser({
     email: user.email,
     password: user.password,

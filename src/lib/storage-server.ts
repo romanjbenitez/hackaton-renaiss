@@ -6,7 +6,6 @@ import { createDataUrl, createStorageKey } from "@/lib/storage";
 const DEFAULT_BUCKET = "tenant-documents";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __proptechSupabaseBucketReady: Promise<void> | undefined;
 }
 
