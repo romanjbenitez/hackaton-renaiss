@@ -2,6 +2,9 @@
 
 import { useMemo } from "react";
 
+import { AlertBanner } from "@/components/ui/alert-banner";
+import { StatCard } from "@/components/ui/stat-card";
+import { StatusPill } from "@/components/ui/status-pill";
 import { TrustScoreBadge } from "@/components/tenant/trust-score-badge";
 import { deriveTrustScoreFallback } from "@/lib/ai/fallback";
 import {
@@ -10,6 +13,7 @@ import {
   type ProfileType,
   type StoredTenantDocument,
 } from "@/lib/tenant/documents";
+import type { SemanticTone } from "@/lib/ui";
 
 type TrustScoreOverviewProps = {
   tenantProfile: {
@@ -41,6 +45,10 @@ function getBarTone(value: number) {
   if (value >= 65) return "bg-sky-500";
   if (value >= 45) return "bg-amber-500";
   return "bg-rose-500";
+}
+
+function getFlagTone(flag: string): SemanticTone {
+  return flag.toLowerCase().includes("alert") ? "danger" : "warning";
 }
 
 export function TrustScoreOverview({
@@ -91,10 +99,7 @@ export function TrustScoreOverview({
         <div className="mt-6 grid gap-4">
           {dimensions.map(([key, value]) => (
             <div key={key} className="rounded-3xl border p-4">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-sm font-medium">{dimensionLabels[key]}</p>
-                <span className="text-sm font-semibold">{value}/100</span>
-              </div>
+              <StatCard label={dimensionLabels[key]} value={`${value}/100`} />
               <div className="bg-muted mt-3 h-2 overflow-hidden rounded-full">
                 <div
                   className={`h-full rounded-full ${getBarTone(value)}`}
@@ -113,18 +118,15 @@ export function TrustScoreOverview({
         {visibleFlags.length > 0 ? (
           <div className="mt-6 flex flex-wrap gap-2">
             {visibleFlags.map((flag) => (
-              <span
-                key={flag}
-                className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-950"
-              >
+              <StatusPill key={flag} tone={getFlagTone(flag)}>
                 {flag}
-              </span>
+              </StatusPill>
             ))}
           </div>
         ) : (
-          <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+          <AlertBanner tone="success" className="mt-6 rounded-3xl">
             No hay alertas principales en el legajo actual.
-          </div>
+          </AlertBanner>
         )}
       </div>
     </div>

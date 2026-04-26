@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 
+import { AlertBanner } from "@/components/ui/alert-banner";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -56,12 +57,12 @@ export function DocumentUploader({
       </div>
 
       {currentFileName ? (
-        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+        <AlertBanner tone="success" className="mt-4">
           <p className="font-medium">Ya cargado: {currentFileName}</p>
           <p className="text-xs opacity-80">
             {currentStatus ? `Estado actual: ${currentStatus}.` : "Podés subir una versión nueva si hace falta."}
           </p>
-        </div>
+        </AlertBanner>
       ) : null}
 
       <input

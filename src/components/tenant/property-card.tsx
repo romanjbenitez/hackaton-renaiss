@@ -1,5 +1,7 @@
 import { CompatibilityBadge } from "@/components/ui/compatibility-badge";
+import { AlertBanner } from "@/components/ui/alert-banner";
 import { buttonVariants } from "@/components/ui/button";
+import { StatCard } from "@/components/ui/stat-card";
 import { cn } from "@/lib/utils";
 
 type PropertyCardProps = {
@@ -62,26 +64,20 @@ export function PropertyCard({
         </div>
 
         <div className="grid gap-3 text-sm md:grid-cols-2">
-          <div className="rounded-2xl border p-3">
-            <p className="text-muted-foreground">Precio</p>
-            <p className="mt-1 font-medium">${price.toLocaleString("es-AR")}</p>
-          </div>
-          <div className="rounded-2xl border p-3">
-            <p className="text-muted-foreground">Superficie</p>
-            <p className="mt-1 font-medium">{squareMeters} m²</p>
-          </div>
+          <StatCard label="Precio" value={`$${price.toLocaleString("es-AR")}`} />
+          <StatCard label="Superficie" value={`${squareMeters} m²`} />
         </div>
 
         {compatibilitySummary ? (
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+          <AlertBanner tone="success">
             {compatibilitySummary}
-          </div>
+          </AlertBanner>
         ) : null}
 
         {applicationStatus ? (
-          <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-950">
+          <AlertBanner tone="info" className="font-medium">
             Ya postulada: {applicationStatus}
-          </div>
+          </AlertBanner>
         ) : (
           <form action={applyAction}>
             <input type="hidden" name="propertyId" value={propertyId} />

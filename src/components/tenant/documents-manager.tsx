@@ -7,20 +7,22 @@ import {
   type UploadedDocumentInput,
 } from "@/components/tenant/document-uploader";
 import { TrustScoreBadge } from "@/components/tenant/trust-score-badge";
+import { AlertBanner } from "@/components/ui/alert-banner";
+import { StatCard } from "@/components/ui/stat-card";
+import { StatusPill } from "@/components/ui/status-pill";
 import { deriveTrustScoreFallback } from "@/lib/ai/fallback";
+import {
+  getGuaranteeDocumentType,
+  getGuaranteeLabel,
+  getRequiredDocuments,
+} from "@/lib/catalogs/tenant-documents";
 import {
   mapDocumentsToAiSummary,
   type GuaranteeType,
   type ProfileType,
   type StoredTenantDocument,
 } from "@/lib/tenant/documents";
-
-type RequiredDocument = {
-  documentType: string;
-  label: string;
-  helperText: string;
-  accept?: string;
-};
+import { inputClassName, type SemanticTone } from "@/lib/ui";
 
 type DocumentsManagerProps = {
   profileType: ProfileType;
@@ -33,87 +35,99 @@ type DocumentsManagerProps = {
   initialDocuments: StoredTenantDocument[];
 };
 
-function getRequiredDocuments(profileType: ProfileType): RequiredDocument[] {
-  switch (profileType) {
-    case "EMPLOYED":
-      return [
-        {
-          documentType: "DNI",
-          label: "DNI",
-          helperText: "Frente o imagen legible del documento.",
-          accept: "image/*,.pdf",
-        },
-        {
-          documentType: "PAYSLIP",
-          label: "Últimos 3 recibos de sueldo",
-          helperText: "Subí un PDF o imagen con los tres recibos consolidados.",
-          accept: "image/*,.pdf",
-        },
-      ];
-    case "MONOTRIBUTISTA":
-      return [
-        {
-          documentType: "DNI",
-          label: "DNI",
-          helperText: "Frente o imagen legible del documento.",
-          accept: "image/*,.pdf",
-        },
-        {
-          documentType: "MONOTRIBUTO_CERTIFICATE",
-          label: "Constancia de monotributo",
-          helperText: "Comprobante de inscripción vigente.",
-          accept: ".pdf,image/*",
-        },
-        {
-          documentType: "MONOTRIBUTO_PAYMENT",
-          label: "Últimos 3 pagos",
-          helperText: "Podés consolidarlos en un solo PDF.",
-          accept: ".pdf,image/*",
-        },
-      ];
-    case "SELF_EMPLOYED":
-      return [
-        {
-          documentType: "DNI",
-          label: "DNI",
-          helperText: "Frente o imagen legible del documento.",
-          accept: "image/*,.pdf",
-        },
-        {
-          documentType: "INCOME_AFFIDAVIT",
-          label: "Declaración jurada de ingresos",
-          helperText: "Comprobante emitido por contador o declaración equivalente.",
-          accept: ".pdf,image/*",
-        },
-      ];
-    case "RETIRED":
-      return [
-        {
-          documentType: "DNI",
-          label: "DNI",
-          helperText: "Frente o imagen legible del documento.",
-          accept: "image/*,.pdf",
-        },
-        {
-          documentType: "RETIREMENT_RECEIPT",
-          label: "Último recibo de jubilación",
-          helperText: "Comprobante mensual más reciente.",
-          accept: ".pdf,image/*",
-        },
-      ];
+type DocumentUploadResult = {
+  document: StoredTenantDocument;
+  tenantProfileId?: string;
+};
+
+type DocumentFraudResult = {
+  suspicious: boolean;
+  confidence: number;
+  reason: string;
+  flaggedForReview: boolean;
+};
+
+type TrustScoreRefreshResult = {
+  score: number;
+  explanation: string;
+  improvementSuggestion: string;
+};
+
+function upsertDocumentByType(documents: StoredTenantDocument[], nextDocument: StoredTenantDocument) {
+  return [nextDocument, ...documents.filter((document) => document.documentType !== nextDocument.documentType)];
+}
+
+function getLatestDocumentByType(documents: StoredTenantDocument[], documentType: string) {
+  return documents.find((document) => document.documentType === documentType) ?? null;
+}
+
+function getVerificationTone(status: StoredTenantDocument["rawVerificationStatus"]): SemanticTone {
+  switch (status) {
+    case "REJECTED":
+      return "danger";
+    case "VERIFIED":
+      return "success";
+    case "FLAGGED":
+      return "warning";
+    default:
+      return "neutral";
   }
 }
 
-function getGuaranteeDocumentType(guaranteeType: GuaranteeType) {
-  if (guaranteeType === "MORTGAGE") return "MORTGAGE_GUARANTEE";
-  if (guaranteeType === "CAUTION_INSURANCE") return "CAUTION_INSURANCE";
-  return null;
+async function uploadTenantDocument(
+  documentType: string,
+  label: string,
+  input: UploadedDocumentInput
+) {
+  const formData = new FormData();
+  formData.set("documentType", documentType);
+  formData.set("label", label);
+  formData.set("file", input.file, input.fileName);
+
+  const response = await fetch("/api/tenant/documents", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return (await response.json()) as DocumentUploadResult;
 }
 
-function getGuaranteeLabel(guaranteeType: GuaranteeType) {
-  if (guaranteeType === "MORTGAGE") return "Garantía hipotecaria";
-  if (guaranteeType === "CAUTION_INSURANCE") return "Seguro de caución";
-  return "Sin garantía definida";
+async function checkUploadedDocument(documentId: string) {
+  const response = await fetch("/api/ai/check-document", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      documentId,
+      persist: true,
+    }),
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return (await response.json()) as DocumentFraudResult;
+}
+
+async function refreshTrustScore(tenantProfileId: string) {
+  const response = await fetch("/api/ai/trust-score", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      tenantProfileId,
+      persist: true,
+    }),
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return (await response.json()) as TrustScoreRefreshResult;
 }
 
 export function DocumentsManager({
@@ -128,151 +142,99 @@ export function DocumentsManager({
 }: DocumentsManagerProps) {
   const [documents, setDocuments] = useState<StoredTenantDocument[]>(initialDocuments);
   const [guaranteeType, setGuaranteeType] = useState<GuaranteeType>(initialGuaranteeType);
-  const [persistedTrustScore, setPersistedTrustScore] = useState<number | null>(
-    initialTrustScore ?? null
-  );
+  const [persistedTrustScore, setPersistedTrustScore] = useState<number | null>(initialTrustScore ?? null);
   const [persistedTrustExplanation, setPersistedTrustExplanation] = useState<string | null>(
     initialTrustExplanation ?? null
   );
-  const [persistedTrustImprovementSuggestion, setPersistedTrustImprovementSuggestion] = useState<
-    string | null
-  >(initialTrustImprovementSuggestion ?? null);
+  const [persistedTrustImprovementSuggestion, setPersistedTrustImprovementSuggestion] = useState<string | null>(
+    initialTrustImprovementSuggestion ?? null
+  );
 
-  const trustScoreFallback = useMemo(() => {
-    return deriveTrustScoreFallback({
-      tenantProfile: {
-        profileType,
-        monthlyIncome,
-        guaranteeType,
-      },
-      documents: mapDocumentsToAiSummary(documents),
-    });
-  }, [documents, guaranteeType, monthlyIncome, profileType]);
+  const trustScoreFallback = useMemo(
+    () =>
+      deriveTrustScoreFallback({
+        tenantProfile: {
+          profileType,
+          monthlyIncome,
+          guaranteeType,
+        },
+        documents: mapDocumentsToAiSummary(documents),
+      }),
+    [documents, guaranteeType, monthlyIncome, profileType]
+  );
   const visibleTrustScore = persistedTrustScore ?? trustScoreFallback.score;
   const visibleTrustExplanation = persistedTrustExplanation ?? trustScoreFallback.explanation;
   const visibleTrustImprovementSuggestion =
     persistedTrustImprovementSuggestion ?? trustScoreFallback.improvementSuggestion;
-
   const requiredDocuments = useMemo(() => getRequiredDocuments(profileType), [profileType]);
-
-  function getLatestDocumentByType(documentType: string) {
-    return (
-      documents.find((document) => document.documentType === documentType) ??
-      null
-    );
-  }
+  const guaranteeDocumentType = getGuaranteeDocumentType(guaranteeType);
+  const guaranteeLabel = getGuaranteeLabel(guaranteeType);
 
   async function handleUpload(documentType: string, label: string, input: UploadedDocumentInput) {
-    const formData = new FormData();
-    formData.set("documentType", documentType);
-    formData.set("label", label);
-    formData.set("file", input.file, input.fileName);
+    const uploadResult = await uploadTenantDocument(documentType, label, input);
 
-    const uploadResponse = await fetch("/api/tenant/documents", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!uploadResponse.ok) {
+    if (!uploadResult) {
       return;
     }
 
-    const uploadResult = (await uploadResponse.json()) as {
-      document: StoredTenantDocument;
-      tenantProfileId?: string;
+    const nextDocument = {
+      ...uploadResult.document,
+      sizeLabel:
+        uploadResult.document.sizeLabel === "Sin tamaño"
+          ? input.sizeLabel
+          : uploadResult.document.sizeLabel,
     };
 
-    const newDoc = {
-      ...uploadResult.document,
-      sizeLabel: uploadResult.document.sizeLabel === "Sin tamaño" ? input.sizeLabel : uploadResult.document.sizeLabel,
-    };
-    setDocuments((currentDocuments) => [
-      newDoc,
-      ...currentDocuments.filter((document) => document.documentType !== newDoc.documentType),
-    ]);
+    setDocuments((currentDocuments) => upsertDocumentByType(currentDocuments, nextDocument));
 
     try {
-      const response = await fetch("/api/ai/check-document", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          documentId: newDoc.id,
-          persist: true,
-        }),
-      });
+      const fraudResult = await checkUploadedDocument(nextDocument.id);
 
-      if (response.ok) {
-        const result = (await response.json()) as {
-          suspicious: boolean;
-          confidence: number;
-          reason: string;
-          flaggedForReview: boolean;
-        };
-
+      if (fraudResult) {
         setDocuments((currentDocuments) =>
           currentDocuments.map((document) =>
-            document.id === newDoc.id
-              ? {
+            document.id !== nextDocument.id
+              ? document
+              : {
                   ...document,
-                  verificationStatus: result.flaggedForReview
+                  verificationStatus: fraudResult.flaggedForReview
                     ? "Pendiente de revisión"
                     : document.verificationStatus,
-                  rawVerificationStatus: result.flaggedForReview
-                    ? "FLAGGED"
-                    : document.rawVerificationStatus,
-                  suspicious: result.suspicious,
-                  suspiciousReason: result.reason,
-                  suspiciousConfidence: result.confidence,
-                  feedbackMessage: result.flaggedForReview
-                    ? `Pendiente de revisión manual. ${result.reason}`
+                  rawVerificationStatus: fraudResult.flaggedForReview ? "FLAGGED" : document.rawVerificationStatus,
+                  suspicious: fraudResult.suspicious,
+                  suspiciousReason: fraudResult.reason,
+                  suspiciousConfidence: fraudResult.confidence,
+                  feedbackMessage: fraudResult.flaggedForReview
+                    ? `Pendiente de revisión manual. ${fraudResult.reason}`
                     : "Documento recibido y listo para validación automática.",
                 }
-              : document
           )
         );
       }
     } catch {
-      // non-blocking: fraud check failure doesn't block upload
+      // Non-blocking: the document remains uploaded even if the AI check fails.
     }
 
     const effectiveTenantProfileId = uploadResult.tenantProfileId ?? tenantProfileId;
 
-    if (effectiveTenantProfileId) {
-      void fetch("/api/ai/trust-score", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tenantProfileId: effectiveTenantProfileId,
-          persist: true,
-        }),
-      })
-        .then(async (response) => {
-          if (!response.ok) {
-            return null;
-          }
+    if (!effectiveTenantProfileId) {
+      return;
+    }
 
-          return (await response.json()) as {
-            score: number;
-            explanation: string;
-            improvementSuggestion: string;
-          };
-        })
-        .then((result) => {
-          if (!result) {
-            return;
-          }
+    try {
+      const trustResult = await refreshTrustScore(effectiveTenantProfileId);
 
-          setPersistedTrustScore(result.score);
-          setPersistedTrustExplanation(result.explanation);
-          setPersistedTrustImprovementSuggestion(result.improvementSuggestion);
-        })
-        .catch(() => {
-          // non-blocking: trust score refresh failure shouldn't block uploads
-        });
+      if (!trustResult) {
+        return;
+      }
+
+      setPersistedTrustScore(trustResult.score);
+      setPersistedTrustExplanation(trustResult.explanation);
+      setPersistedTrustImprovementSuggestion(trustResult.improvementSuggestion);
+    } catch {
+      // Non-blocking: trust score refresh failure should not block document management.
     }
   }
-
-  const guaranteeDocumentType = getGuaranteeDocumentType(guaranteeType);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
@@ -293,60 +255,53 @@ export function DocumentsManager({
         </div>
 
         <div className="space-y-4">
-          {requiredDocuments.map((document) => (
-            (() => {
-              const currentDocument = getLatestDocumentByType(document.documentType);
+          {requiredDocuments.map((document) => {
+            const currentDocument = getLatestDocumentByType(documents, document.documentType);
 
-              return (
-                <DocumentUploader
-                  key={document.documentType}
-                  label={document.label}
-                  helperText={document.helperText}
-                  accept={document.accept}
-                  currentFileName={currentDocument?.fileName ?? null}
-                  currentStatus={currentDocument?.verificationStatus ?? null}
-                  onUpload={(input) => handleUpload(document.documentType, document.label, input)}
-                />
-              );
-            })()
-          ))}
+            return (
+              <DocumentUploader
+                key={document.documentType}
+                label={document.label}
+                helperText={document.helperText}
+                accept={document.accept}
+                currentFileName={currentDocument?.fileName ?? null}
+                currentStatus={currentDocument?.verificationStatus ?? null}
+                onUpload={(input) => handleUpload(document.documentType, document.label, input)}
+              />
+            );
+          })}
         </div>
 
         <div className="bg-muted/30 rounded-3xl border p-5">
           <p className="text-sm font-medium">Resultado automático del score</p>
           <p className="text-muted-foreground mt-2 text-sm leading-7">
-            Cada documento cargado refresca la lectura de confianza y prioriza el score
-            persistido cuando ya fue recalculado por IA.
+            Cada documento cargado refresca la lectura de confianza y prioriza el score persistido
+            cuando ya fue recalculado por IA.
           </p>
-          <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+
+          <AlertBanner tone="success" className="mt-4">
             {visibleTrustExplanation}
-          </div>
+          </AlertBanner>
+
           <div className="mt-5 grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl border p-4">
-              <p className="text-muted-foreground text-sm">Cobertura documental</p>
-              <p className="mt-2 text-xl font-semibold">
-                {trustScoreFallback.dimensions.docCompleteness}/100
-              </p>
-            </div>
-            <div className="rounded-2xl border p-4">
-              <p className="text-muted-foreground text-sm">Consistencia de ingresos</p>
-              <p className="mt-2 text-xl font-semibold">
-                {trustScoreFallback.dimensions.incomeConsistency}/100
-              </p>
-            </div>
-            <div className="rounded-2xl border p-4">
-              <p className="text-muted-foreground text-sm">Garantía</p>
-              <p className="mt-2 text-xl font-semibold">
-                {trustScoreFallback.dimensions.guaranteeType}/100
-              </p>
-            </div>
-            <div className="rounded-2xl border p-4">
-              <p className="text-muted-foreground text-sm">Historial de plataforma</p>
-              <p className="mt-2 text-xl font-semibold">
-                {trustScoreFallback.dimensions.platformHistory}/100
-              </p>
-            </div>
+            <StatCard
+              label="Cobertura documental"
+              value={`${trustScoreFallback.dimensions.docCompleteness}/100`}
+            />
+            <StatCard
+              label="Consistencia de ingresos"
+              value={`${trustScoreFallback.dimensions.incomeConsistency}/100`}
+            />
+            <StatCard
+              label="Garantía"
+              value={`${trustScoreFallback.dimensions.guaranteeType}/100`}
+            />
+            <StatCard
+              label="Historial de plataforma"
+              value={`${trustScoreFallback.dimensions.platformHistory}/100`}
+            />
           </div>
+
           <p className="mt-5 text-sm leading-7">{visibleTrustImprovementSuggestion}</p>
         </div>
 
@@ -354,13 +309,12 @@ export function DocumentsManager({
           <div className="space-y-2">
             <p className="text-sm font-medium">Garantía para la postulación</p>
             <p className="text-muted-foreground text-sm">
-              Definí si vas a presentar garantía hipotecaria o seguro de caución y adjuntá el
-              respaldo.
+              Definí si vas a presentar garantía hipotecaria o seguro de caución y adjuntá el respaldo.
             </p>
           </div>
 
           <select
-            className="mt-4 h-12 w-full rounded-2xl border px-4"
+            className={`${inputClassName} mt-4`}
             value={guaranteeType}
             onChange={(event) => setGuaranteeType(event.target.value as GuaranteeType)}
           >
@@ -371,22 +325,16 @@ export function DocumentsManager({
 
           {guaranteeDocumentType ? (
             <div className="mt-4">
-              {(() => {
-                const currentDocument = getLatestDocumentByType(guaranteeDocumentType);
-
-                return (
               <DocumentUploader
-                label={getGuaranteeLabel(guaranteeType)}
+                label={guaranteeLabel}
                 helperText="Subí el documento principal asociado a la garantía elegida."
                 accept=".pdf,image/*"
-                currentFileName={currentDocument?.fileName ?? null}
-                currentStatus={currentDocument?.verificationStatus ?? null}
-                onUpload={(input) =>
-                  handleUpload(guaranteeDocumentType, getGuaranteeLabel(guaranteeType), input)
+                currentFileName={getLatestDocumentByType(documents, guaranteeDocumentType)?.fileName ?? null}
+                currentStatus={
+                  getLatestDocumentByType(documents, guaranteeDocumentType)?.verificationStatus ?? null
                 }
+                onUpload={(input) => handleUpload(guaranteeDocumentType, guaranteeLabel, input)}
               />
-                );
-              })()}
             </div>
           ) : null}
         </div>
@@ -412,24 +360,12 @@ export function DocumentsManager({
                       {document.sizeLabel} · {new Date(document.uploadedAt).toLocaleString("es-AR")}
                     </p>
                     {document.feedbackMessage ? (
-                      <p className="mt-2 text-xs leading-5 text-slate-700">
-                        {document.feedbackMessage}
-                      </p>
+                      <p className="mt-2 text-xs leading-5 text-slate-700">{document.feedbackMessage}</p>
                     ) : null}
                   </div>
-                  <span
-                    className={
-                      document.rawVerificationStatus === "REJECTED"
-                        ? "rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-900"
-                        : document.rawVerificationStatus === "VERIFIED"
-                          ? "rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-900"
-                          : document.rawVerificationStatus === "FLAGGED"
-                            ? "rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-950"
-                            : "rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-900"
-                    }
-                  >
+                  <StatusPill tone={getVerificationTone(document.rawVerificationStatus)}>
                     {document.verificationStatus}
-                  </span>
+                  </StatusPill>
                 </div>
               </li>
             ))

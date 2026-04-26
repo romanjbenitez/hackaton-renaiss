@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { getSurfaceToneClasses } from "@/lib/ui";
 
 type CompatibilityBadgeProps = {
   score: number | null | undefined;
@@ -9,10 +10,10 @@ type CompatibilityBadgeProps = {
 };
 
 function getTone(score: number) {
-  if (score >= 80) return "border-emerald-200 bg-emerald-50 text-emerald-950";
-  if (score >= 65) return "border-sky-200 bg-sky-50 text-sky-950";
-  if (score >= 45) return "border-amber-200 bg-amber-50 text-amber-950";
-  return "border-rose-200 bg-rose-50 text-rose-950";
+  if (score >= 80) return getSurfaceToneClasses("success");
+  if (score >= 65) return getSurfaceToneClasses("info");
+  if (score >= 45) return getSurfaceToneClasses("warning");
+  return getSurfaceToneClasses("danger");
 }
 
 export function CompatibilityBadge({
@@ -26,7 +27,8 @@ export function CompatibilityBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-4 py-1 text-sm font-medium text-zinc-700",
+          "inline-flex items-center rounded-full border px-4 py-1 text-sm font-medium",
+          getSurfaceToneClasses("neutral"),
           className
         )}
       >

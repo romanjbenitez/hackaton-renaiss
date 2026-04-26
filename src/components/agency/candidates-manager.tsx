@@ -3,8 +3,12 @@
 import { useMemo, useState } from "react";
 
 import { CompatibilityBadge } from "@/components/ui/compatibility-badge";
+import { AlertBanner } from "@/components/ui/alert-banner";
 import { buttonVariants } from "@/components/ui/button";
+import { StatCard } from "@/components/ui/stat-card";
+import { StatusPill } from "@/components/ui/status-pill";
 import { cn } from "@/lib/utils";
+import { inputClassName } from "@/lib/ui";
 
 type CandidateRecord = {
   id: string;
@@ -106,16 +110,8 @@ export function CandidatesManager({
           <p className="text-muted-foreground mt-3">{property.addressLine}</p>
         </div>
 
-        {message ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
-            {message}
-          </div>
-        ) : null}
-        {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-950">
-            {error}
-          </div>
-        ) : null}
+        {message ? <AlertBanner tone="success">{message}</AlertBanner> : null}
+        {error ? <AlertBanner tone="danger">{error}</AlertBanner> : null}
 
         <form action={createManualCandidacyAction} className="rounded-3xl border p-5">
           <input type="hidden" name="propertyId" value={property.id} />
@@ -125,17 +121,17 @@ export function CandidatesManager({
           </p>
 
           <div className="mt-5 grid gap-4">
-            <input className="h-12 rounded-2xl border px-4" placeholder="Nombre completo" name="fullName" />
-            <input className="h-12 rounded-2xl border px-4" placeholder="Email" name="email" type="email" />
-            <input className="h-12 rounded-2xl border px-4" placeholder="Teléfono" name="phone" />
+            <input className={inputClassName} placeholder="Nombre completo" name="fullName" />
+            <input className={inputClassName} placeholder="Email" name="email" type="email" />
+            <input className={inputClassName} placeholder="Teléfono" name="phone" />
             <input
-              className="h-12 rounded-2xl border px-4"
+              className={inputClassName}
               placeholder="Ingreso mensual"
               type="number"
               name="monthlyIncome"
               min="1"
             />
-            <select className="h-12 rounded-2xl border px-4" name="guaranteeType" defaultValue="CAUTION_INSURANCE">
+            <select className={inputClassName} name="guaranteeType" defaultValue="CAUTION_INSURANCE">
               <option value="CAUTION_INSURANCE">Seguro de caución</option>
               <option value="MORTGAGE">Garantía hipotecaria</option>
               <option value="NONE">Sin garantía</option>
@@ -151,7 +147,7 @@ export function CandidatesManager({
       <section className="bg-background space-y-6 rounded-4xl border p-8 shadow-sm">
         <div className="grid gap-3 md:grid-cols-3">
           <select
-            className="h-12 rounded-2xl border px-4"
+            className={inputClassName}
             value={sourceFilter}
             onChange={(event) => setSourceFilter(event.target.value as "ALL" | CandidateRecord["source"])}
           >
@@ -161,7 +157,7 @@ export function CandidatesManager({
           </select>
 
           <select
-            className="h-12 rounded-2xl border px-4"
+            className={inputClassName}
             value={guaranteeFilter}
             onChange={(event) =>
               setGuaranteeFilter(event.target.value as "ALL" | "MORTGAGE" | "CAUTION_INSURANCE" | "NONE")
@@ -174,7 +170,7 @@ export function CandidatesManager({
           </select>
 
           <select
-            className="h-12 rounded-2xl border px-4"
+            className={inputClassName}
             value={ratioFilter}
             onChange={(event) => setRatioFilter(event.target.value as "ALL" | "healthy" | "watch")}
           >
@@ -200,9 +196,9 @@ export function CandidatesManager({
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <span className="rounded-full border border-sky-200 bg-sky-50 px-4 py-1 text-sm font-medium text-sky-950">
+                    <StatusPill tone="info" className="px-4 py-1 text-sm">
                       Score {candidate.scoreAtSubmission}
-                    </span>
+                    </StatusPill>
                     <CompatibilityBadge
                       score={candidate.aiCompatibilityScore}
                       explanation={candidate.aiCompatibilityExplanation}
@@ -213,26 +209,20 @@ export function CandidatesManager({
                 </div>
 
                 <div className="mt-5 grid gap-3 text-sm md:grid-cols-4">
-                  <div className="rounded-2xl border p-3">
-                    <p className="text-muted-foreground">Fuente</p>
-                    <p className="mt-1 font-medium">{getSourceLabel(candidate.source)}</p>
-                  </div>
-                  <div className="rounded-2xl border p-3">
-                    <p className="text-muted-foreground">Garantía</p>
-                    <p className="mt-1 font-medium">{getGuaranteeLabel(candidate.guaranteeType)}</p>
-                  </div>
-                  <div className="rounded-2xl border p-3">
-                    <p className="text-muted-foreground">Ingreso</p>
-                    <p className="mt-1 font-medium">
-                      {candidate.monthlyIncome
+                  <StatCard label="Fuente" value={getSourceLabel(candidate.source)} />
+                  <StatCard label="Garantía" value={getGuaranteeLabel(candidate.guaranteeType)} />
+                  <StatCard
+                    label="Ingreso"
+                    value={
+                      candidate.monthlyIncome
                         ? `$${candidate.monthlyIncome.toLocaleString("es-AR")}`
-                        : "Sin dato"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border p-3">
-                    <p className="text-muted-foreground">Ingreso / alquiler</p>
-                    <p className="mt-1 font-medium">{candidate.rentToIncomeRatio ?? "Sin dato"}</p>
-                  </div>
+                        : "Sin dato"
+                    }
+                  />
+                  <StatCard
+                    label="Ingreso / alquiler"
+                    value={candidate.rentToIncomeRatio ?? "Sin dato"}
+                  />
                 </div>
               </li>
             ))

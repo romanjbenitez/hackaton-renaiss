@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { getSurfaceToneClasses } from "@/lib/ui";
 import { getTrustScoreLabel, getTrustScoreTone } from "@/lib/tenant/scoring";
 
 type TrustScoreBadgeProps = {
@@ -7,10 +8,10 @@ type TrustScoreBadgeProps = {
 };
 
 const toneClasses = {
-  emerald: "border-emerald-200 bg-emerald-50 text-emerald-950",
-  sky: "border-sky-200 bg-sky-50 text-sky-950",
-  amber: "border-amber-200 bg-amber-50 text-amber-950",
-  rose: "border-rose-200 bg-rose-50 text-rose-950",
+  emerald: getSurfaceToneClasses("success"),
+  sky: getSurfaceToneClasses("info"),
+  amber: getSurfaceToneClasses("warning"),
+  rose: getSurfaceToneClasses("danger"),
 } as const;
 
 export function TrustScoreBadge({ score, className }: TrustScoreBadgeProps) {

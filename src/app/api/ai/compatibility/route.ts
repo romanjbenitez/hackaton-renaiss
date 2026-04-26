@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db/prisma";
 import { generateCompatibility } from "@/lib/ai/engine";
+import { getCurrentAgencyUser } from "@/lib/auth/actors";
+import { getCurrentSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 
@@ -20,6 +22,22 @@ function toNumber(value: Prisma.Decimal | number | null | undefined) {
 }
 
 export async function POST(request: Request) {
+  const session = await getCurrentSession();
+
+  if (!session.user) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  if (session.role !== "agency") {
+    return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
+  }
+
+  const agency = await getCurrentAgencyUser();
+
+  if (!agency) {
+    return NextResponse.json({ error: "No se encontró la inmobiliaria" }, { status: 404 });
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = requestSchema.safeParse(body);
 
@@ -66,20 +84,9 @@ export async function POST(request: Request) {
         id: true,
         tenantProfileId: true,
         propertyId: true,
-        tenantProfile: {
-          select: {
-            profileType: true,
-            monthlyIncome: true,
-            guaranteeType: true,
-            hasPets: true,
-            isSmoker: true,
-            hasChildren: true,
-            familyMembers: true,
-            trustScore: true,
-          },
-        },
         property: {
           select: {
+            agencyId: true,
             title: true,
             city: true,
             province: true,
@@ -93,10 +100,22 @@ export async function POST(request: Request) {
             compatibilityNotes: true,
           },
         },
+        tenantProfile: {
+          select: {
+            profileType: true,
+            monthlyIncome: true,
+            guaranteeType: true,
+            hasPets: true,
+            isSmoker: true,
+            hasChildren: true,
+            familyMembers: true,
+            trustScore: true,
+          },
+        },
       },
     });
 
-    if (!candidacy) {
+    if (!candidacy || candidacy.property.agencyId !== agency.id) {
       return NextResponse.json({ error: "No se encontró la candidatura" }, { status: 404 });
     }
 
@@ -131,6 +150,26 @@ export async function POST(request: Request) {
       );
     }
 
+    const relatedCandidacy = await prisma.candidacy.findFirst({
+      where: {
+        propertyId,
+        tenantProfileId,
+        property: {
+          agencyId: agency.id,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!relatedCandidacy) {
+      return NextResponse.json(
+        { error: "No se encontró una candidatura válida para ese perfil y propiedad" },
+        { status: 404 }
+      );
+    }
+
     const [databaseProfile, databaseProperty] = await Promise.all([
       prisma.tenantProfile.findUnique({
         where: { id: tenantProfileId },
@@ -148,6 +187,7 @@ export async function POST(request: Request) {
       prisma.property.findUnique({
         where: { id: propertyId },
         select: {
+          agencyId: true,
           title: true,
           city: true,
           province: true,
@@ -163,7 +203,7 @@ export async function POST(request: Request) {
       }),
     ]);
 
-    if (!databaseProfile || !databaseProperty) {
+    if (!databaseProfile || !databaseProperty || databaseProperty.agencyId !== agency.id) {
       return NextResponse.json({ error: "No se encontró el perfil o la propiedad" }, { status: 404 });
     }
 

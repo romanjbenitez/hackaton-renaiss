@@ -50,12 +50,21 @@ export async function getCurrentSession() {
   const {
     data: { session },
   } = await supabase.auth.getSession();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-  const user = session?.user ?? null;
-  const role = normalizeRole(user?.app_metadata.role ?? user?.user_metadata.role);
-  const dbUser = user && role ? await syncAuthUserToProfile(user, role) : null;
+  const verifiedUser = userError ? null : (user ?? null);
+  const role = normalizeRole(verifiedUser?.app_metadata.role ?? verifiedUser?.user_metadata.role);
+  const dbUser = verifiedUser && role ? await syncAuthUserToProfile(verifiedUser, role) : null;
 
-  return { role, session, user, dbUser };
+  return {
+    role,
+    session: verifiedUser ? session : null,
+    user: verifiedUser,
+    dbUser,
+  };
 }
 
 export async function requireUserRole(role: AppRole): Promise<AuthorizedSession> {

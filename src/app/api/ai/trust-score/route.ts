@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { documentSummarySchema, tenantAiInputSchema } from "@/lib/ai/schemas";
 import { generateTrustScore } from "@/lib/ai/engine";
+import { ensureCurrentTenantContext } from "@/lib/auth/actors";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,12 @@ function toNumber(value: Prisma.Decimal | number | null | undefined) {
 }
 
 export async function POST(request: Request) {
+  const tenantContext = await ensureCurrentTenantContext();
+
+  if (!tenantContext?.tenantProfile) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = requestSchema.safeParse(body);
 
@@ -32,17 +39,20 @@ export async function POST(request: Request) {
     );
   }
 
+  if (parsed.data.userId && parsed.data.userId !== tenantContext.user.id) {
+    return NextResponse.json({ error: "No autorizado para este usuario" }, { status: 403 });
+  }
+
   let tenantProfile = parsed.data.tenantProfile ?? null;
   let documents = parsed.data.documents ?? [];
   let tenantProfileId = parsed.data.tenantProfileId ?? null;
 
   if ((tenantProfileId || parsed.data.userId) && !tenantProfile) {
     const databaseProfile = await prisma.tenantProfile.findFirst({
-      where: tenantProfileId
-        ? { id: tenantProfileId }
-        : {
-            userId: parsed.data.userId ?? undefined,
-          },
+      where: {
+        userId: tenantContext.user.id,
+        ...(tenantProfileId ? { id: tenantProfileId } : {}),
+      },
       select: {
         id: true,
         dni: true,
@@ -95,6 +105,10 @@ export async function POST(request: Request) {
 
   if (!tenantProfile) {
     return NextResponse.json({ error: "Falta tenantProfile o tenantProfileId" }, { status: 400 });
+  }
+
+  if (tenantProfileId && tenantProfileId !== tenantContext.tenantProfile.id) {
+    return NextResponse.json({ error: "No autorizado para este perfil" }, { status: 403 });
   }
 
   const result = await generateTrustScore({

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import { documentFraudAiSchema } from "@/lib/ai/schemas";
 import { generateGrokJsonOutput, parseJsonFromModelOutput } from "@/lib/ai/grok";
 import { docFraudDetectionPrompt } from "@/lib/ai/prompts";
+import { ensureCurrentTenantContext } from "@/lib/auth/actors";
 import { getStoredDocumentDataUrl } from "@/lib/storage-server";
 
 export const runtime = "nodejs";
@@ -41,6 +42,12 @@ function buildFallback(document: {
 }
 
 export async function POST(request: Request) {
+  const tenantContext = await ensureCurrentTenantContext();
+
+  if (!tenantContext?.tenantProfile) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = requestSchema.safeParse(body);
 
@@ -64,10 +71,11 @@ export async function POST(request: Request) {
         storageKey: true,
         url: true,
         base64Data: true,
+        tenantProfileId: true,
       },
     });
 
-    if (!document) {
+    if (!document || document.tenantProfileId !== tenantContext.tenantProfile.id) {
       return NextResponse.json({ error: "No se encontró el documento" }, { status: 404 });
     }
 
@@ -102,7 +110,9 @@ export async function POST(request: Request) {
 
   if (parsed.data.persist && parsed.data.documentId) {
     await prisma.document.update({
-      where: { id: parsed.data.documentId },
+      where: {
+        id: parsed.data.documentId,
+      },
       data: {
         suspicious: result.suspicious,
         suspiciousScore: result.confidence,

@@ -5,11 +5,29 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint-and-build:
-    name: Lint & Build
+  quality:
+    name: Quality Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://user:pass@localhost:5432/db
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+      GROK_API_KEY: placeholder-grok-key
+      GROK_BASE_URL: https://api.x.ai/v1
+      RESEND_API_KEY: placeholder-resend-key
+      RESEND_FROM_EMAIL: noreply@placeholder.com
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
 
     steps:
       - uses: actions/checkout@v4
@@ -26,21 +44,14 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
-      - name: Type check
-        run: npm run type-check
-
       - name: Lint
         run: npm run lint
 
+      - name: Type check
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm test
+
       - name: Build
         run: npm run build
-        env:
-          # Dummy values so Next.js build doesn't fail on missing env vars
-          DATABASE_URL: postgresql://user:pass@localhost:5432/db
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
-          GROK_API_KEY: placeholder-grok-key
-          GROK_BASE_URL: https://api.x.ai/v1
-          RESEND_API_KEY: placeholder-resend-key
-          RESEND_FROM_EMAIL: noreply@placeholder.com
-          NEXT_PUBLIC_APP_URL: http://localhost:3000

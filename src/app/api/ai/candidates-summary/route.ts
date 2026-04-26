@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db/prisma";
 import { candidatesSummaryAiSchema } from "@/lib/ai/schemas";
 import { generateGrokJsonOutput, parseJsonFromModelOutput } from "@/lib/ai/grok";
 import { candidatesSummaryPrompt } from "@/lib/ai/prompts";
+import { getCurrentAgencyUser } from "@/lib/auth/actors";
+import { getCurrentSession } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 
@@ -34,6 +36,22 @@ function buildFallbackSummary(candidates: Array<{ id: string; label: string; sco
 }
 
 export async function POST(request: Request) {
+  const session = await getCurrentSession();
+
+  if (!session.user) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  if (session.role !== "agency") {
+    return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
+  }
+
+  const agency = await getCurrentAgencyUser();
+
+  if (!agency) {
+    return NextResponse.json({ error: "No se encontró la inmobiliaria" }, { status: 404 });
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = requestSchema.safeParse(body);
 
@@ -44,8 +62,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const property = await prisma.property.findUnique({
-    where: { id: parsed.data.propertyId },
+  const property = await prisma.property.findFirst({
+    where: {
+      id: parsed.data.propertyId,
+      agencyId: agency.id,
+    },
     select: {
       id: true,
       title: true,
