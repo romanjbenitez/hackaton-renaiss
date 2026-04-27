@@ -1,5 +1,9 @@
 # PropTech
 
+## Demo
+
+- Video demo: https://drive.google.com/file/d/1byoyVz0IQufkQLI7OusEBKEMOoxVbrxT/view?usp=sharing
+
 Plataforma full-stack para gestión inmobiliaria con tres actores:
 
 - `tenant`: onboarding, documentos, trust score, catálogo de propiedades y postulaciones
