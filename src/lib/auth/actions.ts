@@ -25,7 +25,7 @@ function getErrorRedirect(pathname: string, message: string) {
 function getNextPath(formData: FormData, fallbackPath: string) {
   const nextPath = formData.get("next");
 
-  if (typeof nextPath === "string" && nextPath.startsWith("/")) {
+  if (typeof nextPath === "string" && nextPath.startsWith("/") && nextPath !== "/") {
     return nextPath;
   }
 
@@ -107,7 +107,7 @@ export async function signInWithGoogleAction(formData: FormData) {
 
   const nextPath = formData.get("next");
   const resolvedNextPath =
-    typeof nextPath === "string" && nextPath.startsWith("/") ? nextPath : "/";
+    typeof nextPath === "string" && nextPath.startsWith("/") && nextPath !== "/" ? nextPath : "/";
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {

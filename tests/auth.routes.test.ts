@@ -19,7 +19,7 @@ test("normalizeRole accepts only supported app roles", () => {
 });
 
 test("role paths and pathname parsing stay aligned", () => {
-  assert.equal(getDefaultRolePath("tenant"), "/tenant");
+  assert.equal(getDefaultRolePath("tenant"), "/tenant/properties");
   assert.equal(getDefaultRolePath("agency"), "/agency");
   assert.equal(getRoleFromPathname("/tenant/properties"), "tenant");
   assert.equal(getRoleFromPathname("/agency/transactions/123"), "agency");
@@ -56,4 +56,3 @@ test("auth callback URL preserves the next path and falls back to localhost", ()
     process.env.NEXT_PUBLIC_APP_URL = originalAppUrl;
   }
 });
-
