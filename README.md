@@ -2,7 +2,7 @@
 
 ## Demo
 
-- Video demo: https://drive.google.com/file/d/1byoyVz0IQufkQLI7OusEBKEMOoxVbrxT/view?usp=sharing
+- Video demo: https://drive.google.com/file/d/1byoyVz0IQufkQLI7OusEBKEMOoxVbrxT
 
 Plataforma full-stack para gestión inmobiliaria con tres actores:
 
