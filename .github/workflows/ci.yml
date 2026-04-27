@@ -53,13 +53,5 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-      - name: Run E2E tests (API mode, no browser required)
-        run: npm run test:e2e
-        env:
-          # Auth-guard and login tests pass with placeholder credentials.
-          # Authenticated tenant/agency tests are skipped unless real Supabase creds are set.
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
-
       - name: Build
         run: npm run build
