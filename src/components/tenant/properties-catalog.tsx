@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { PropertyType } from "@prisma/client";
 
+import type { ApplyToPropertyActionState } from "@/app/(tenant)/tenant/properties/actions";
 import { PropertyCard } from "@/components/tenant/property-card";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { buttonVariants } from "@/components/ui/button";
@@ -48,7 +49,10 @@ type PropertiesCatalogProps = {
   hasCompleteProfile: boolean;
   message?: string;
   error?: string;
-  applyAction: (formData: FormData) => void | Promise<void>;
+  applyAction: (
+    previousState: ApplyToPropertyActionState,
+    formData: FormData
+  ) => ApplyToPropertyActionState | Promise<ApplyToPropertyActionState>;
   properties: PropertyRecord[];
 };
 

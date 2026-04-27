@@ -23,7 +23,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const message = getSearchValue(params.message);
   const nextPath = getSearchValue(params.next) ?? `/${selectedRole}`;
   const isConfigured = isSupabaseConfigured();
-  const demoUsers = getDemoUserForUi().filter((user) => user.role === selectedRole);
+  const demoUsers = getDemoUserForUi()
+    .filter((user) => user.role === selectedRole)
+    .slice(0, selectedRole === "tenant" ? 4 : undefined);
 
   return (
     <main className="from-background via-background to-muted/40 flex min-h-screen bg-linear-to-b">

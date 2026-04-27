@@ -641,6 +641,21 @@ async function main() {
       })
     )
   );
+
+  const now = Date.now();
+  await Promise.all(
+    properties.map((property, index) => {
+      const isRemaxProperty = property.agencyId === agencyUser1.id;
+      const offsetMinutes = isRemaxProperty ? index : 120 + index;
+
+      return prisma.property.update({
+        where: { id: property.id },
+        data: {
+          createdAt: new Date(now - offsetMinutes * 60_000),
+        },
+      });
+    })
+  );
   console.log("✓ 10 properties created");
 
   // ─── Candidacies & Transactions ───────────────────────────────────────────

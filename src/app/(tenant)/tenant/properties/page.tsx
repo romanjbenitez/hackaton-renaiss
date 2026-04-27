@@ -1,5 +1,8 @@
 import { PropertiesCatalog } from "@/components/tenant/properties-catalog";
-import { applyToPropertyAction } from "@/app/(tenant)/tenant/properties/actions";
+import {
+  applyToPropertyAction,
+  type ApplyToPropertyActionState,
+} from "@/app/(tenant)/tenant/properties/actions";
 import { getTenantPublishedProperties } from "@/lib/tenant/properties";
 
 type TenantPropertiesPageProps = {
@@ -21,7 +24,12 @@ export default async function TenantPropertiesPage({ searchParams }: TenantPrope
   return (
     <PropertiesCatalog
       properties={catalog.properties}
-      applyAction={applyToPropertyAction}
+      applyAction={
+        applyToPropertyAction as (
+          previousState: ApplyToPropertyActionState,
+          formData: FormData
+        ) => Promise<ApplyToPropertyActionState>
+      }
       message={getSearchValue(resolvedSearchParams.message)}
       error={getSearchValue(resolvedSearchParams.error)}
       hasCompleteProfile={catalog.hasCompleteProfile}

@@ -1,7 +1,15 @@
+"use client";
+
+import { useActionState, useEffect, useState } from "react";
+import { useFormStatus } from "react-dom";
+
 import { CompatibilityBadge } from "@/components/ui/compatibility-badge";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { buttonVariants } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
+import type {
+  ApplyToPropertyActionState,
+} from "@/app/(tenant)/tenant/properties/actions";
 import { cn } from "@/lib/utils";
 
 type PropertyCardProps = {
@@ -18,8 +26,29 @@ type PropertyCardProps = {
   compatibilityConflicts?: string[];
   photoUrl?: string;
   canApply: boolean;
-  applyAction: (formData: FormData) => void | Promise<void>;
+  applyAction: (
+    previousState: ApplyToPropertyActionState,
+    formData: FormData
+  ) => ApplyToPropertyActionState | Promise<ApplyToPropertyActionState>;
   applicationStatus?: string | null;
+};
+
+function SubmitButton({ canApply }: { canApply: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      className={cn(buttonVariants({ size: "lg" }), "w-full rounded-2xl")}
+      type="submit"
+      disabled={!canApply || pending}
+    >
+      {pending ? "Enviando postulación..." : canApply ? "Postularme" : "Completá tu perfil para postularte"}
+    </button>
+  );
+}
+
+const initialApplyToPropertyState: ApplyToPropertyActionState = {
+  ok: false,
 };
 
 export function PropertyCard({
@@ -39,9 +68,18 @@ export function PropertyCard({
   applyAction,
   applicationStatus,
 }: PropertyCardProps) {
+  const [actionState, formAction] = useActionState(applyAction, initialApplyToPropertyState);
+  const [localApplicationStatus, setLocalApplicationStatus] = useState(applicationStatus);
+
+  useEffect(() => {
+    if (actionState.ok) {
+      setLocalApplicationStatus("POSTULACION_REALIZADA");
+    }
+  }, [actionState.ok]);
+
   return (
-    <article className="bg-background overflow-hidden rounded-4xl border shadow-sm">
-      <div className="bg-muted aspect-[16/10] w-full">
+    <article className="bg-background overflow-visible rounded-4xl border shadow-sm">
+      <div className="bg-muted aspect-[16/10] w-full overflow-hidden rounded-t-[2rem]">
         {photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={photoUrl} alt={title} className="h-full w-full object-cover" />
@@ -74,20 +112,23 @@ export function PropertyCard({
           </AlertBanner>
         ) : null}
 
-        {applicationStatus ? (
-          <AlertBanner tone="info" className="font-medium">
-            Ya postulada: {applicationStatus}
-          </AlertBanner>
+        {actionState.error ? <AlertBanner tone="danger">{actionState.error}</AlertBanner> : null}
+
+        {localApplicationStatus ? (
+          <>
+            {actionState.ok && actionState.message ? (
+              <AlertBanner tone="success">{actionState.message}</AlertBanner>
+            ) : null}
+            <AlertBanner tone="info" className="font-medium">
+              {localApplicationStatus === "POSTULACION_REALIZADA"
+                ? "Postulación realizada"
+                : `Ya postulada: ${localApplicationStatus}`}
+            </AlertBanner>
+          </>
         ) : (
-          <form action={applyAction}>
+          <form action={formAction}>
             <input type="hidden" name="propertyId" value={propertyId} />
-            <button
-              className={cn(buttonVariants({ size: "lg" }), "w-full rounded-2xl")}
-              type="submit"
-              disabled={!canApply}
-            >
-              {canApply ? "Postularme" : "Completá tu perfil para postularte"}
-            </button>
+            <SubmitButton canApply={canApply} />
           </form>
         )}
       </div>

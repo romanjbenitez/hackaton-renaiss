@@ -1,32 +1,45 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 import { requireUserRole } from "@/lib/auth/session";
 import { createPlatformCandidacy } from "@/lib/candidacies/service";
 
-function redirectWithError(message: string): never {
-  redirect(`/tenant/properties?error=${encodeURIComponent(message)}`);
-}
+export type ApplyToPropertyActionState = {
+  ok: boolean;
+  message?: string;
+  error?: string;
+};
 
-function redirectWithMessage(message: string): never {
-  redirect(`/tenant/properties?message=${encodeURIComponent(message)}`);
-}
-
-export async function applyToPropertyAction(formData: FormData) {
+export async function applyToPropertyAction(
+  _previousState: ApplyToPropertyActionState,
+  formData: FormData
+): Promise<ApplyToPropertyActionState> {
   await requireUserRole("tenant");
 
   const propertyId = String(formData.get("propertyId") ?? "");
 
   if (!propertyId) {
-    redirectWithError("Propiedad inválida.");
+    return {
+      ok: false,
+      error: "Propiedad inválida.",
+    };
   }
 
   const result = await createPlatformCandidacy(propertyId);
 
   if (!result.ok) {
-    redirectWithError(result.error);
+    return {
+      ok: false,
+      error: result.error,
+    };
   }
 
-  redirectWithMessage("Postulación creada correctamente.");
+  revalidatePath("/tenant/properties");
+  revalidatePath("/tenant/applications");
+
+  return {
+    ok: true,
+    message: "Postulación realizada.",
+  };
 }
