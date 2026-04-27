@@ -12,7 +12,6 @@ import {
 } from "@/lib/auth/config";
 import {
   clearDemoSessionCookie,
-  findDemoUserByCredentials,
   findDemoUserByLogin,
   setDemoSessionCookie,
 } from "@/lib/auth/demo";

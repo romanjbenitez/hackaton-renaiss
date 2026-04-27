@@ -129,7 +129,6 @@ export async function saveTenantOnboardingDraft(input: TenantOnboardingDraft) {
     return;
   }
 
-  const snapshot = getTenantProfileSnapshot(input);
   const existingDocuments = user.tenantProfile
     ? await prisma.document.findMany({
         where: {

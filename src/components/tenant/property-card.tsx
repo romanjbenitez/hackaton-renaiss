@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { CompatibilityBadge } from "@/components/ui/compatibility-badge";
@@ -69,13 +69,7 @@ export function PropertyCard({
   applicationStatus,
 }: PropertyCardProps) {
   const [actionState, formAction] = useActionState(applyAction, initialApplyToPropertyState);
-  const [localApplicationStatus, setLocalApplicationStatus] = useState(applicationStatus);
-
-  useEffect(() => {
-    if (actionState.ok) {
-      setLocalApplicationStatus("POSTULACION_REALIZADA");
-    }
-  }, [actionState.ok]);
+  const localApplicationStatus = actionState.ok ? "POSTULACION_REALIZADA" : applicationStatus;
 
   return (
     <article className="bg-background overflow-visible rounded-4xl border shadow-sm">
