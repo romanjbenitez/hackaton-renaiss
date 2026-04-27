@@ -3,6 +3,7 @@ import "server-only";
 import { UserRole } from "@prisma/client";
 import { z } from "zod";
 
+import { deriveTrustScoreFallback } from "@/lib/ai/fallback";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { onboardingStep1Schema, onboardingStep2Schema } from "@/lib/validations/tenant";
@@ -129,16 +130,43 @@ export async function saveTenantOnboardingDraft(input: TenantOnboardingDraft) {
   }
 
   const snapshot = getTenantProfileSnapshot(input);
-  const shouldRefreshTrustFallback =
-    !user.tenantProfile || user.tenantProfile._count.documents === 0;
+  const existingDocuments = user.tenantProfile
+    ? await prisma.document.findMany({
+        where: {
+          tenantProfileId: user.tenantProfile.id,
+        },
+        select: {
+          id: true,
+          type: true,
+          displayName: true,
+          verificationStatus: true,
+          suspicious: true,
+          suspiciousScore: true,
+        },
+      })
+    : [];
 
-  const trustData = shouldRefreshTrustFallback
-    ? {
-        trustScore: snapshot.baseScore,
-        trustScoreExplanation: snapshot.suggestions.join(" "),
-        improvementSuggestion: snapshot.suggestions[0] ?? null,
-      }
-    : {};
+  const trustFallback = deriveTrustScoreFallback({
+    tenantProfile: {
+      dni: input.step1.dni,
+      profileType: input.step1.profileType,
+      occupation: input.step1.occupation,
+      monthlyIncome: input.step1.monthlyIncome,
+      guaranteeType: input.step2?.guaranteeType ?? "NONE",
+      hasPets: input.step2?.hasPets ?? false,
+      isSmoker: input.step2?.isSmoker ?? false,
+      hasChildren: input.step2?.hasChildren ?? false,
+      familyMembers: input.step2?.familyMembers ?? 1,
+      platformHistoryScore: user.tenantProfile?.trustScore ?? undefined,
+    },
+    documents: existingDocuments,
+  });
+
+  const trustData = {
+    trustScore: trustFallback.score,
+    trustScoreExplanation: trustFallback.explanation,
+    improvementSuggestion: trustFallback.improvementSuggestion,
+  };
 
   await prisma.tenantProfile.upsert({
     where: { userId: user.id },
@@ -162,9 +190,9 @@ export async function saveTenantOnboardingDraft(input: TenantOnboardingDraft) {
       profileType: input.step1.profileType,
       occupation: input.step1.occupation,
       monthlyIncome: input.step1.monthlyIncome,
-      trustScore: snapshot.baseScore,
-      trustScoreExplanation: snapshot.suggestions.join(" "),
-      improvementSuggestion: snapshot.suggestions[0] ?? null,
+      trustScore: trustData.trustScore,
+      trustScoreExplanation: trustData.trustScoreExplanation,
+      improvementSuggestion: trustData.improvementSuggestion,
       hasPets: input.step2?.hasPets ?? false,
       isSmoker: input.step2?.isSmoker ?? false,
       hasChildren: input.step2?.hasChildren ?? false,

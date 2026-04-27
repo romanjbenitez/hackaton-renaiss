@@ -65,6 +65,16 @@ export function findDemoUserByCredentials(role: AppRole, email: string, password
   );
 }
 
+export function findDemoUserByLogin(email: string, password: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  return (
+    demoUsers.find(
+      (user) => user.email.toLowerCase() === normalizedEmail && user.password === password
+    ) ?? null
+  );
+}
+
 export function findDemoUserByEmail(email: string) {
   const normalizedEmail = email.trim().toLowerCase();
 

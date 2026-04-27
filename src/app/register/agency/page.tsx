@@ -112,7 +112,6 @@ export default async function RegisterAgencyPage({ searchParams }: RegisterAgenc
           </form>
 
           <form action={signInWithGoogleAction} className="mt-4">
-            <input type="hidden" name="role" value="agency" />
             <input type="hidden" name="next" value="/agency" />
             <button
               className={cn(
@@ -127,7 +126,7 @@ export default async function RegisterAgencyPage({ searchParams }: RegisterAgenc
           <div className="text-muted-foreground mt-6 flex items-center gap-3 text-sm">
             <span>¿Ya tenés cuenta?</span>
             <Link
-              href="/login?role=agency"
+              href="/login"
               className="text-foreground underline underline-offset-4"
             >
               Iniciar sesión

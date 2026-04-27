@@ -99,8 +99,7 @@ export default async function RegisterTenantPage({ searchParams }: RegisterTenan
           </form>
 
           <form action={signInWithGoogleAction} className="mt-4">
-            <input type="hidden" name="role" value="tenant" />
-            <input type="hidden" name="next" value="/tenant" />
+            <input type="hidden" name="next" value="/tenant/properties" />
             <button
               className={cn(
                 buttonVariants({ variant: "outline", size: "lg" }),
@@ -114,7 +113,7 @@ export default async function RegisterTenantPage({ searchParams }: RegisterTenan
           <div className="text-muted-foreground mt-6 flex items-center gap-3 text-sm">
             <span>¿Ya tenés cuenta?</span>
             <Link
-              href="/login?role=tenant"
+              href="/login"
               className="text-foreground underline underline-offset-4"
             >
               Iniciar sesión

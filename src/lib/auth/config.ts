@@ -17,6 +17,10 @@ export function normalizeRole(value: unknown): AppRole | null {
 }
 
 export function getDefaultRolePath(role: AppRole) {
+  if (role === "tenant") {
+    return "/tenant/properties";
+  }
+
   return `/${role}`;
 }
 

@@ -9,11 +9,11 @@ import {
   isAppRole,
   isSupabaseConfigured,
   normalizeRole,
-  type AppRole,
 } from "@/lib/auth/config";
 import {
   clearDemoSessionCookie,
   findDemoUserByCredentials,
+  findDemoUserByLogin,
   setDemoSessionCookie,
 } from "@/lib/auth/demo";
 import { ensureSupabaseAuthUserForDemoUser } from "@/lib/auth/supabase-demo-sync";
@@ -23,42 +23,33 @@ function getErrorRedirect(pathname: string, message: string) {
   return `${pathname}?error=${encodeURIComponent(message)}`;
 }
 
-function getNextPath(formData: FormData, fallbackRole: AppRole) {
+function getNextPath(formData: FormData, fallbackPath: string) {
   const nextPath = formData.get("next");
 
   if (typeof nextPath === "string" && nextPath.startsWith("/")) {
     return nextPath;
   }
 
-  return getDefaultRolePath(fallbackRole);
+  return fallbackPath;
 }
 
 export async function signInWithPasswordAction(formData: FormData) {
-  const roleValue = formData.get("role");
   const email = formData.get("email");
   const password = formData.get("password");
 
   if (!isSupabaseConfigured()) {
-    if (typeof roleValue !== "string" || !isAppRole(roleValue)) {
-      redirect(getErrorRedirect("/login", "Seleccioná un rol válido."));
-    }
-
     if (typeof email !== "string" || typeof password !== "string") {
       redirect(getErrorRedirect("/login", "Completá email y contraseña."));
     }
 
-    const demoUser = findDemoUserByCredentials(roleValue, email, password);
+    const demoUser = findDemoUserByLogin(email, password);
 
     if (!demoUser) {
       redirect(getErrorRedirect("/login", "Credenciales demo inválidas."));
     }
 
     await setDemoSessionCookie(demoUser);
-    redirect(getNextPath(formData, demoUser.role));
-  }
-
-  if (typeof roleValue !== "string" || !isAppRole(roleValue)) {
-    redirect(getErrorRedirect("/login", "Seleccioná un rol válido."));
+    redirect(getNextPath(formData, getDefaultRolePath(demoUser.role)));
   }
 
   if (typeof email !== "string" || typeof password !== "string") {
@@ -71,7 +62,7 @@ export async function signInWithPasswordAction(formData: FormData) {
     redirect(getErrorRedirect("/login", "No se pudo inicializar Supabase."));
   }
 
-  const matchingDemoUser = findDemoUserByCredentials(roleValue, email, password);
+  const matchingDemoUser = findDemoUserByLogin(email, password);
 
   if (matchingDemoUser) {
     try {
@@ -99,25 +90,14 @@ export async function signInWithPasswordAction(formData: FormData) {
     redirect(getErrorRedirect("/login", "Tu cuenta no tiene un rol asignado."));
   }
 
-  if (signedInRole && signedInRole !== roleValue) {
-    await supabase.auth.signOut();
-    redirect(getErrorRedirect("/login", "El rol seleccionado no coincide con tu cuenta."));
-  }
-
-  redirect(getNextPath(formData, signedInRole));
+  redirect(getNextPath(formData, getDefaultRolePath(signedInRole)));
 }
 
 export async function signInWithGoogleAction(formData: FormData) {
-  const roleValue = formData.get("role");
-
   if (!isSupabaseConfigured()) {
     redirect(
       getErrorRedirect("/login", "Google OAuth no está disponible mientras la app corre en modo demo.")
     );
-  }
-
-  if (typeof roleValue !== "string" || !isAppRole(roleValue)) {
-    redirect(getErrorRedirect("/login", "Seleccioná un rol válido."));
   }
 
   const supabase = await createServerSupabaseClient();
@@ -126,11 +106,13 @@ export async function signInWithGoogleAction(formData: FormData) {
     redirect(getErrorRedirect("/login", "No se pudo inicializar Supabase."));
   }
 
-  const nextPath = getNextPath(formData, roleValue);
+  const nextPath = formData.get("next");
+  const resolvedNextPath =
+    typeof nextPath === "string" && nextPath.startsWith("/") ? nextPath : "/";
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: getAuthCallbackUrl(nextPath),
+      redirectTo: getAuthCallbackUrl(resolvedNextPath),
       queryParams: {
         access_type: "offline",
         prompt: "consent",
@@ -164,13 +146,15 @@ export async function signUpAction(formData: FormData) {
     redirect(getLoginRedirect("El rol de registro no es válido."));
   }
 
+  const registrationRole: "tenant" | "agency" = roleValue;
+
   if (
     typeof firstName !== "string" ||
     typeof lastName !== "string" ||
     typeof email !== "string" ||
     typeof password !== "string"
   ) {
-    redirect(getErrorRedirect(`/register/${roleValue}`, "Completá los campos obligatorios."));
+    redirect(getErrorRedirect(`/register/${registrationRole}`, "Completá los campos obligatorios."));
   }
 
   const supabase = await createServerSupabaseClient();
@@ -183,9 +167,9 @@ export async function signUpAction(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: getAuthCallbackUrl(getDefaultRolePath(roleValue)),
+      emailRedirectTo: getAuthCallbackUrl(getDefaultRolePath(registrationRole)),
       data: {
-        role: roleValue,
+        role: registrationRole,
         first_name: firstName,
         last_name: lastName,
         company_name: typeof companyName === "string" ? companyName : null,
@@ -195,11 +179,11 @@ export async function signUpAction(formData: FormData) {
   });
 
   if (error) {
-    redirect(getErrorRedirect(`/register/${roleValue}`, error.message));
+    redirect(getErrorRedirect(`/register/${registrationRole}`, error.message));
   }
 
   redirect(
-    `/login?role=${roleValue}&message=${encodeURIComponent(
+    `/login?message=${encodeURIComponent(
       "Cuenta creada. Revisá tu email para confirmar el acceso."
     )}`
   );
