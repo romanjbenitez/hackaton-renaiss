@@ -114,6 +114,61 @@ export async function createAgencyProperty(
   return property;
 }
 
+export async function updateAgencyProperty(
+  id: string,
+  agencyId: string,
+  input: {
+    title: string;
+    description: string;
+    addressLine: string;
+    city: string;
+    province: string;
+    propertyType: PropertyType;
+    status: PropertyStatus;
+    squareMeters: number;
+    bedrooms: number;
+    bathrooms: number;
+    price: number;
+    expenses: number;
+    externalUrl?: string;
+    photos: string[];
+    targetTrustScore: number;
+    acceptedGuarantees: GuaranteeType[];
+    acceptsPets: boolean;
+    acceptsSmokers: boolean;
+    acceptsChildren: boolean;
+    preferredProfile?: TenantProfileType;
+    compatibilityNotes?: string;
+  }
+) {
+  return prisma.property.updateMany({
+    where: { id, agencyId },
+    data: {
+      title: input.title,
+      description: input.description,
+      addressLine: input.addressLine,
+      city: input.city,
+      province: input.province,
+      propertyType: input.propertyType,
+      status: input.status,
+      squareMeters: input.squareMeters,
+      bedrooms: input.bedrooms,
+      bathrooms: input.bathrooms,
+      price: input.price,
+      expenses: input.expenses,
+      externalUrl: input.externalUrl ?? null,
+      photos: input.photos,
+      targetTrustScore: input.targetTrustScore,
+      acceptedGuarantees: input.acceptedGuarantees,
+      acceptsPets: input.acceptsPets,
+      acceptsSmokers: input.acceptsSmokers,
+      acceptsChildren: input.acceptsChildren,
+      preferredProfile: input.preferredProfile ?? null,
+      compatibilityNotes: input.compatibilityNotes ?? null,
+    },
+  });
+}
+
 export async function getAgencyPropertyById(id: string, agencyId: string) {
   const property = await prisma.property.findFirst({
     where: {

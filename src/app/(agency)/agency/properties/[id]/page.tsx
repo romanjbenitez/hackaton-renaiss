@@ -142,12 +142,21 @@ export default async function AgencyPropertyDetailPage({
 
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
+              href={`/agency/properties/${property.id}/edit`}
+              className={cn(buttonVariants(), "rounded-2xl")}
+            >
+              Editar propiedad
+            </Link>
+            <Link
               href="/agency/properties"
               className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
             >
               Volver al listado
             </Link>
-            <Link href="/agency/properties/new" className={cn(buttonVariants(), "rounded-2xl")}>
+            <Link
+              href="/agency/properties/new"
+              className={cn(buttonVariants({ variant: "outline" }), "rounded-2xl")}
+            >
               Cargar otra propiedad
             </Link>
             {property.externalUrl ? (
