@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { createPropertyAction } from "./actions";
 
+import { PhotoUploader } from "@/components/agency/photo-uploader";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -32,17 +33,20 @@ export default async function NewAgencyPropertyPage({ searchParams }: NewAgencyP
             Cargá la ficha base del inmueble
           </h1>
           <p className="text-muted-foreground mt-3 max-w-3xl leading-8">
-            Este formulario concentra datos básicos, publicación y compatibilidad esperada para que
-            después puedas ordenar candidatos con el mismo criterio.
+            Los campos marcados con <span className="text-rose-500">*</span> son obligatorios.
           </p>
         </div>
 
         <form action={createPropertyAction} className="mt-8 space-y-8">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-medium">Título comercial</span>
+              <span className="text-sm font-medium">
+                Título comercial <span className="text-rose-500">*</span>
+              </span>
               <input
                 name="title"
+                required
+                minLength={5}
                 className="h-12 w-full rounded-2xl border px-4"
                 placeholder="Ej: 3 ambientes con balcón y amenities"
               />
@@ -56,20 +60,27 @@ export default async function NewAgencyPropertyPage({ searchParams }: NewAgencyP
               />
             </label>
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-medium">Dirección</span>
+              <span className="text-sm font-medium">
+                Dirección <span className="text-rose-500">*</span>
+              </span>
               <input
                 name="addressLine"
+                required
                 className="h-12 w-full rounded-2xl border px-4"
                 placeholder="Calle y altura"
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium">Ciudad / Barrio</span>
-              <input name="city" className="h-12 w-full rounded-2xl border px-4" />
+              <span className="text-sm font-medium">
+                Ciudad / Barrio <span className="text-rose-500">*</span>
+              </span>
+              <input name="city" required className="h-12 w-full rounded-2xl border px-4" />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium">Provincia</span>
-              <input name="province" className="h-12 w-full rounded-2xl border px-4" />
+              <span className="text-sm font-medium">
+                Provincia <span className="text-rose-500">*</span>
+              </span>
+              <input name="province" required className="h-12 w-full rounded-2xl border px-4" />
             </label>
             <label className="space-y-2">
               <span className="text-sm font-medium">Tipo</span>
@@ -101,36 +112,48 @@ export default async function NewAgencyPropertyPage({ searchParams }: NewAgencyP
               </select>
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium">m2</span>
+              <span className="text-sm font-medium">
+                m² <span className="text-rose-500">*</span>
+              </span>
               <input
                 name="squareMeters"
                 type="number"
                 min="1"
+                required
                 className="h-12 w-full rounded-2xl border px-4"
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium">Ambientes</span>
+              <span className="text-sm font-medium">
+                Ambientes <span className="text-rose-500">*</span>
+              </span>
               <input
                 name="bedrooms"
                 type="number"
                 min="0"
+                required
                 className="h-12 w-full rounded-2xl border px-4"
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium">Baños</span>
+              <span className="text-sm font-medium">
+                Baños <span className="text-rose-500">*</span>
+              </span>
               <input
                 name="bathrooms"
                 type="number"
                 min="1"
+                required
                 className="h-12 w-full rounded-2xl border px-4"
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-medium">Alquiler mensual</span>
+              <span className="text-sm font-medium">
+                Alquiler mensual <span className="text-rose-500">*</span>
+              </span>
               <input
                 name="price"
+                required
                 className="h-12 w-full rounded-2xl border px-4"
                 placeholder="950000"
               />
@@ -151,14 +174,10 @@ export default async function NewAgencyPropertyPage({ searchParams }: NewAgencyP
                 placeholder="https://zonaprop.com/..."
               />
             </label>
-            <label className="space-y-2 md:col-span-2">
+            <div className="space-y-2 md:col-span-2">
               <span className="text-sm font-medium">Fotos</span>
-              <textarea
-                name="photoUrls"
-                className="min-h-28 w-full rounded-2xl border px-4 py-3"
-                placeholder={"https://...\nhttps://..."}
-              />
-            </label>
+              <PhotoUploader />
+            </div>
           </div>
 
           <div className="rounded-3xl border p-6">

@@ -67,7 +67,7 @@ export const propertyFormSchema = propertyBasicsSchema
   .merge(propertyCompatibilitySchema);
 
 export const createPropertySchema = z.object({
-  title: z.string().min(5, "Ingresá un título más descriptivo").max(80),
+  title: z.string().min(5, "El título debe tener al menos 5 caracteres").max(80, "El título no puede superar 80 caracteres"),
   addressLine: z.string().min(5, "Ingresá la dirección").max(120),
   city: z.string().min(2, "Ingresá la ciudad").max(60),
   province: z.string().min(2, "Ingresá la provincia").max(60),
@@ -103,17 +103,13 @@ export const createPropertySchema = z.object({
     .refine((value) => !value || /^https?:\/\/\S+$/i.test(value), "Ingresá una URL válida"),
   photoUrls: z
     .string()
-    .max(1000)
+    .max(5000)
+    .optional()
     .transform((value) =>
-      value
+      (value ?? "")
         .split("\n")
         .map((item) => item.trim())
         .filter(Boolean)
-    )
-    .refine((value) => value.length > 0, "Cargá al menos una foto o URL")
-    .refine(
-      (value) => value.every((item) => /^https?:\/\/\S+$/i.test(item)),
-      "Revisá las URLs de fotos"
     ),
   targetTrustScore: z
     .string()

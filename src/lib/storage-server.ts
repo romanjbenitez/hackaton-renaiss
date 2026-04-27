@@ -4,6 +4,7 @@ import { createSupabaseAdminClient, isSupabaseAdminConfigured } from "@/lib/auth
 import { createDataUrl, createStorageKey } from "@/lib/storage";
 
 const DEFAULT_BUCKET = "tenant-documents";
+const PHOTOS_BUCKET = "property-photos";
 
 declare global {
   var __proptechSupabaseBucketReady: Promise<void> | undefined;
@@ -119,6 +120,45 @@ export async function deleteStoredDocumentsFromStorage(storageKeys: Array<string
   if (error) {
     throw new Error(error.message);
   }
+}
+
+export async function uploadPropertyPhotoToStorage(file: File): Promise<string> {
+  if (!isSupabaseAdminConfigured()) {
+    throw new Error("Falta configurar Supabase admin para Storage.");
+  }
+
+  const supabase = createSupabaseAdminClient();
+
+  if (!supabase) {
+    throw new Error("No se pudo inicializar Supabase admin.");
+  }
+
+  const { error: bucketError } = await supabase.storage.getBucket(PHOTOS_BUCKET);
+
+  if (bucketError) {
+    await supabase.storage.createBucket(PHOTOS_BUCKET, {
+      public: true,
+      fileSizeLimit: 10 * 1024 * 1024,
+    });
+  }
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const key = `photos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from(PHOTOS_BUCKET)
+    .upload(key, await file.arrayBuffer(), {
+      contentType: file.type || "image/jpeg",
+      upsert: false,
+    });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const { data } = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(key);
+
+  return data.publicUrl;
 }
 
 export async function resolveStoredDocumentPreviewUrlFromStorage(input: {
