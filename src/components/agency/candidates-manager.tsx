@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { ConfirmSubmitButton } from "@/components/agency/confirm-submit-button";
 import { CompatibilityBadge } from "@/components/ui/compatibility-badge";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { buttonVariants } from "@/components/ui/button";
@@ -43,6 +44,7 @@ type CandidatesManagerProps = {
   message?: string;
   error?: string;
   createManualCandidacyAction: (formData: FormData) => void | Promise<void>;
+  selectCandidacyAction: (formData: FormData) => void | Promise<void>;
 };
 
 function getCandidateName(candidate: CandidateRecord) {
@@ -107,6 +109,7 @@ export function CandidatesManager({
   message,
   error,
   createManualCandidacyAction,
+  selectCandidacyAction,
 }: CandidatesManagerProps) {
   const [sourceFilter, setSourceFilter] = useState<"ALL" | CandidateRecord["source"]>("ALL");
   const [guaranteeFilter, setGuaranteeFilter] = useState<
@@ -224,6 +227,11 @@ export function CandidatesManager({
                     <StatusPill tone="info" className="px-4 py-1 text-sm">
                       Score {candidate.scoreAtSubmission}
                     </StatusPill>
+                    {candidate.status === "SELECTED" ? (
+                      <StatusPill tone="success" className="px-4 py-1 text-sm">
+                        Seleccionado
+                      </StatusPill>
+                    ) : null}
                     <CompatibilityBadge
                       score={candidate.aiCompatibilityScore}
                       explanation={candidate.aiCompatibilityExplanation}
@@ -255,6 +263,19 @@ export function CandidatesManager({
                     );
                   })()}
                 </div>
+
+                {candidate.status !== "SELECTED" ? (
+                  <form action={selectCandidacyAction} className="mt-4">
+                    <input type="hidden" name="propertyId" value={property.id} />
+                    <input type="hidden" name="candidacyId" value={candidate.id} />
+                    <ConfirmSubmitButton
+                      confirmMessage="¿Confirmás seleccionar este candidato y abrir la transacción?"
+                      className={cn(buttonVariants(), "rounded-2xl")}
+                    >
+                      Seleccionar candidato
+                    </ConfirmSubmitButton>
+                  </form>
+                ) : null}
               </li>
             ))
           )}

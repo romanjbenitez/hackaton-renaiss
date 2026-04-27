@@ -1,6 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 
-import { createManualCandidacyAction } from "@/app/(agency)/agency/properties/[id]/candidates/actions";
+import {
+  createManualCandidacyAction,
+  selectCandidacyAction,
+} from "@/app/(agency)/agency/properties/[id]/candidates/actions";
 import { CandidatesManager } from "@/components/agency/candidates-manager";
 import { CandidateSummaryPanel } from "@/components/agency/candidate-summary-panel";
 import { getAgencyPropertyById } from "@/lib/agency/properties";
@@ -74,6 +77,7 @@ export default async function PropertyCandidatesPage({
         message={getSearchValue(resolvedSearchParams.message)}
         error={getSearchValue(resolvedSearchParams.error)}
         createManualCandidacyAction={createManualCandidacyAction}
+        selectCandidacyAction={selectCandidacyAction}
       />
     </div>
   );
