@@ -76,6 +76,31 @@ function getGuaranteeLabel(value: CandidateRecord["guaranteeType"]) {
   }
 }
 
+function formatIncome(value: number | null) {
+  if (!value) return "Sin dato";
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatRatio(value: number | null) {
+  if (value === null) return { label: "Sin dato", tone: "neutral" as const };
+  const pct = Math.round(value * 100);
+  if (pct <= 35) return { label: `${pct}% ✓`, tone: "success" as const };
+  if (pct <= 50) return { label: `${pct}%`, tone: "warning" as const };
+  return { label: `${pct}%`, tone: "danger" as const };
+}
+
+function truncateEmail(email: string) {
+  if (email.length <= 32) return email;
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  const shortLocal = local && local.length > 12 ? local.slice(0, 12) + "…" : local;
+  return `${shortLocal}@${domain}`;
+}
+
 export function CandidatesManager({
   property,
   candidacies,
@@ -192,10 +217,10 @@ export function CandidatesManager({
                   <div>
                     <h2 className="text-xl font-semibold">{getCandidateName(candidate)}</h2>
                     <p className="text-muted-foreground mt-2 text-sm">
-                      {getCandidateEmail(candidate)} · {getCandidatePhone(candidate)}
+                      {truncateEmail(getCandidateEmail(candidate))} · {getCandidatePhone(candidate)}
                     </p>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <StatusPill tone="info" className="px-4 py-1 text-sm">
                       Score {candidate.scoreAtSubmission}
                     </StatusPill>
@@ -208,21 +233,27 @@ export function CandidatesManager({
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3 text-sm md:grid-cols-4">
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
                   <StatCard label="Fuente" value={getSourceLabel(candidate.source)} />
                   <StatCard label="Garantía" value={getGuaranteeLabel(candidate.guaranteeType)} />
-                  <StatCard
-                    label="Ingreso"
-                    value={
-                      candidate.monthlyIncome
-                        ? `$${candidate.monthlyIncome.toLocaleString("es-AR")}`
-                        : "Sin dato"
-                    }
-                  />
-                  <StatCard
-                    label="Ingreso / alquiler"
-                    value={candidate.rentToIncomeRatio ?? "Sin dato"}
-                  />
+                  <StatCard label="Ingreso mensual" value={formatIncome(candidate.monthlyIncome)} />
+                  {(() => {
+                    const ratio = formatRatio(candidate.rentToIncomeRatio);
+                    return (
+                      <div className="rounded-2xl border p-4">
+                        <p className="text-muted-foreground text-sm">Alquiler / ingreso</p>
+                        <p
+                          className={cn("mt-2 text-xl font-semibold", {
+                            "text-emerald-700": ratio.tone === "success",
+                            "text-amber-700": ratio.tone === "warning",
+                            "text-rose-700": ratio.tone === "danger",
+                          })}
+                        >
+                          {ratio.label}
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
               </li>
             ))
