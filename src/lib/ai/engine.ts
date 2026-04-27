@@ -38,6 +38,8 @@ type PropertySnapshot = {
   city: string;
   province: string;
   price: number;
+  squareMeters?: number | null;
+  bedrooms?: number | null;
   targetTrustScore?: number | null;
   acceptedGuarantees?: GuaranteeType[];
   acceptsPets: boolean;

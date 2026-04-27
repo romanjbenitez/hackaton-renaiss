@@ -31,6 +31,8 @@ type PropertySnapshot = {
   city: string;
   province: string;
   price: number;
+  squareMeters?: number | null;
+  bedrooms?: number | null;
   targetTrustScore?: number | null;
   acceptedGuarantees?: GuaranteeType[];
   acceptsPets: boolean;
@@ -144,19 +146,47 @@ export function deriveCompatibilityFallback(input: {
   const rent = input.property.price || 1;
   const ratio = income > 0 ? rent / income : 1.5;
   const acceptedGuarantees = input.property.acceptedGuarantees ?? [];
+  const trustScore = input.tenantProfile.trustScore;
+  const trustGap =
+    trustScore != null && input.property.targetTrustScore != null
+      ? trustScore - input.property.targetTrustScore
+      : null;
+  const familyMembers = input.tenantProfile.familyMembers ?? 1;
+  const squareMeters = input.property.squareMeters ?? null;
+  const bedrooms = input.property.bedrooms ?? null;
+  const estimatedCapacity =
+    bedrooms != null && bedrooms > 0 ? bedrooms + 1 : squareMeters != null ? Math.max(1, Math.floor(squareMeters / 22)) : null;
+  const householdFit =
+    estimatedCapacity == null
+      ? 0
+      : familyMembers <= estimatedCapacity
+        ? familyMembers === estimatedCapacity
+          ? 6
+          : 10
+        : familyMembers - estimatedCapacity >= 2
+          ? -16
+          : -9;
 
   const matchPoints = [
-    ratio <= 0.3 ? "Relación ingreso/alquiler saludable" : null,
+    ratio <= 0.3 ? "Relación ingreso/alquiler saludable" : ratio <= 0.4 ? "Ingreso razonable para el alquiler" : null,
     acceptedGuarantees.includes(input.tenantProfile.guaranteeType ?? "NONE")
       ? "La garantía declarada encaja con la propiedad"
       : null,
+    trustGap != null && trustGap >= 0 ? "Tu trust score alcanza el objetivo pedido" : null,
+    householdFit >= 6 ? "El tamaño del hogar encaja con la unidad" : null,
     input.property.acceptsPets || !input.tenantProfile.hasPets ? "No hay choque por mascotas" : null,
     input.property.acceptsSmokers || !input.tenantProfile.isSmoker ? "No hay choque por fumador" : null,
     input.property.acceptsChildren || !input.tenantProfile.hasChildren ? "No hay choque por niños" : null,
   ].filter(Boolean) as string[];
 
   const conflicts = [
-    ratio > 0.35 ? "El alquiler queda exigente frente al ingreso declarado" : null,
+    ratio > 0.4 ? "El alquiler queda exigente frente al ingreso declarado" : null,
+    trustGap != null && trustGap < -10
+      ? `Tu trust score queda ${Math.abs(trustGap)} puntos debajo del objetivo`
+      : trustGap != null && trustGap < 0
+        ? "Tu trust score queda apenas por debajo del objetivo"
+        : null,
+    householdFit <= -9 ? "El tamaño del grupo familiar queda ajustado para esta unidad" : null,
     input.tenantProfile.hasPets && !input.property.acceptsPets ? "La propiedad no acepta mascotas" : null,
     input.tenantProfile.isSmoker && !input.property.acceptsSmokers ? "La propiedad no acepta fumadores" : null,
     input.tenantProfile.hasChildren && !input.property.acceptsChildren ? "La propiedad no acepta niños" : null,
@@ -166,21 +196,33 @@ export function deriveCompatibilityFallback(input: {
   ].filter(Boolean) as string[];
 
   const compatibilityScore = clampScore(
-    55 +
-      (ratio <= 0.3 ? 20 : ratio <= 0.4 ? 10 : -10) +
-      (acceptedGuarantees.includes(input.tenantProfile.guaranteeType ?? "NONE") ? 15 : -8) +
+    48 +
+      (ratio <= 0.28 ? 22 : ratio <= 0.35 ? 14 : ratio <= 0.45 ? 4 : -16) +
+      (acceptedGuarantees.includes(input.tenantProfile.guaranteeType ?? "NONE") ? 14 : -10) +
+      (trustGap == null ? 0 : trustGap >= 0 ? 10 : trustGap >= -10 ? -3 : -14) +
+      householdFit +
       (input.property.acceptsPets || !input.tenantProfile.hasPets ? 4 : -10) +
       (input.property.acceptsSmokers || !input.tenantProfile.isSmoker ? 3 : -6) +
-      (input.property.acceptsChildren || !input.tenantProfile.hasChildren ? 3 : -6) +
-      (input.property.preferredProfile && input.property.preferredProfile === input.tenantProfile.profileType ? 5 : 0)
+      (input.property.acceptsChildren || !input.tenantProfile.hasChildren ? 3 : -7) +
+      (input.property.preferredProfile
+        ? input.property.preferredProfile === input.tenantProfile.profileType
+          ? 6
+          : -5
+        : 0)
   );
+
+  const explanation =
+    compatibilityScore >= 85
+      ? "Compatibilidad alta: el perfil cumple bien con las condiciones económicas y operativas de la propiedad."
+      : compatibilityScore >= 65
+        ? conflicts.length > 0
+          ? `Compatibilidad moderada con algunos ajustes: ${conflicts[0]}.`
+          : "Compatibilidad sólida: el perfil encaja razonablemente bien con la ficha de la propiedad."
+        : `Compatibilidad baja o riesgosa: ${conflicts[0] ?? "hay varias fricciones entre tu perfil y la publicación"}.`;
 
   return {
     compatibilityScore,
-    explanation:
-      conflicts.length > 0
-        ? `Compatibilidad moderada con fricciones concretas: ${conflicts[0]}.`
-        : "Compatibilidad sólida: el perfil encaja bien con la ficha de la propiedad.",
+    explanation,
     matchPoints,
     conflicts,
   };

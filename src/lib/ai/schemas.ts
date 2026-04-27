@@ -71,6 +71,8 @@ export const compatibilityAiInputSchema = z.object({
     city: z.string().min(1),
     province: z.string().min(1),
     price: z.number().positive(),
+    squareMeters: z.number().int().positive().nullable().optional(),
+    bedrooms: z.number().int().positive().nullable().optional(),
     targetTrustScore: z.number().min(0).max(100).nullable().optional(),
     acceptedGuarantees: z.array(z.enum(guaranteeTypes)).default([]),
     acceptsPets: z.boolean(),
